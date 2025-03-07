@@ -7,6 +7,7 @@ import numpy as np
 
 from styles import setup_styles
 from components import create_sidebar, create_main_content, create_controls
+from data_manager import DataManager
 
 
 class GestaoVistaApp:
@@ -24,8 +25,29 @@ class GestaoVistaApp:
         self.caracteristicas = []
         self.export_container = None
         self.export_button = None
+        self.caracteristica_combo = None
+        self.caracteristica_var = tk.StringVar()
+        self.coluna_codigo = None  # Inicializar a variável coluna_codigo
+
+        # Inicializar gerenciador de dados
+        self.data_manager = DataManager()
+
+        # Carregar dados salvos
+        self.df_gestao = self.data_manager.load_gestao()
+        self.df_casas = self.data_manager.load_casas()
+
+        if self.df_gestao is not None:
+            self.caracteristicas = self.df_gestao.columns[1:].tolist()
+            self.coluna_codigo = self.df_gestao.columns[
+                0
+            ]  # Definir coluna_codigo se tiver dados
 
         self.setup_ui()
+
+        # Atualizar interface com dados carregados
+        if self.df_gestao is not None:
+            self.caracteristica_combo["values"] = self.caracteristicas
+            self.plot_graph()
 
     def setup_window(self):
         """Configura a janela principal"""
@@ -54,7 +76,6 @@ class GestaoVistaApp:
         self.main_frame, self.graph_frame = create_main_content(self.root)
 
         # Criar controles
-        self.caracteristica_var = tk.StringVar()
         self.controls_frame, self.caracteristica_combo, self.feedback_label = (
             create_controls(
                 self.main_frame,
@@ -65,8 +86,303 @@ class GestaoVistaApp:
 
         # Criar sidebar com botão de exportar escondido inicialmente
         self.sidebar, (self.export_container, self.export_button) = create_sidebar(
-            self.root, self.load_gestao, self.load_casas, self.export_faltantes
+            self.root,
+            self.load_gestao,
+            self.load_casas,
+            self.export_faltantes,
+            self.clear_gestao,
+            self.clear_casas,
+            self.view_casas,
         )
+
+        # Atualizar combo se já tiver dados
+        if self.caracteristicas:
+            self.caracteristica_combo["values"] = self.caracteristicas
+
+    def clear_gestao(self):
+        """Limpa os dados de Gestão à Vista"""
+        if messagebox.askyesno(
+            "Confirmar", "Deseja realmente limpar os dados de Gestão à Vista?"
+        ):
+            self.data_manager.clear_gestao()
+            self.df_gestao = None
+            self.caracteristicas = []
+            self.caracteristica_combo["values"] = []
+            self.caracteristica_var.set("Escolha uma característica...")
+
+            # Limpar gráfico
+            for widget in self.graph_frame.winfo_children():
+                widget.destroy()
+
+            self.show_success_message("Dados de Gestão à Vista limpos com sucesso!")
+
+    def clear_casas(self):
+        """Limpa os dados das Casas de Oração"""
+        if messagebox.askyesno(
+            "Confirmar", "Deseja realmente limpar os dados das Casas de Oração?"
+        ):
+            self.data_manager.clear_casas()
+            self.df_casas = None
+            self.show_success_message("Dados das Casas de Oração limpos com sucesso!")
+
+    def view_casas(self):
+        """Abre janela para visualizar e editar casas de oração"""
+        if self.df_casas is None:
+            self.df_casas = pd.DataFrame(
+                columns=[
+                    "codigo",
+                    "nome",
+                    "endereco",
+                    "bairro",
+                    "cidade",
+                    "responsavel",
+                    "telefone",
+                ]
+            )
+
+        # Criar nova janela
+        window = tk.Toplevel(self.root)
+        window.title("Casas de Oração")
+        window.geometry("1000x700")
+        window.configure(bg=self.design_system["colors"]["background"])
+
+        # Frame principal
+        main_frame = ttk.Frame(window, style="Card.TFrame")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        # Frame para botões de ação
+        action_frame = ttk.Frame(main_frame, style="Card.TFrame")
+        action_frame.pack(fill=tk.X, padx=5, pady=(0, 10))
+
+        # Botão Adicionar
+        add_btn = tk.Button(
+            action_frame,
+            text="➕ Adicionar Casa",
+            command=lambda: self.add_edit_casa(window, None),
+            font=("Helvetica", 12),
+            bg="#4CAF50",
+            fg="white",
+            relief="flat",
+            cursor="hand2",
+            padx=15,
+            pady=5,
+        )
+        add_btn.pack(side=tk.LEFT, padx=5)
+
+        # Frame para a tabela
+        table_frame = ttk.Frame(main_frame, style="Card.TFrame")
+        table_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        # Criar Treeview
+        columns = [
+            "codigo",
+            "nome",
+            "endereco",
+            "bairro",
+            "cidade",
+            "responsavel",
+            "telefone",
+        ]
+        tree = ttk.Treeview(table_frame, columns=columns, show="headings")
+
+        # Configurar colunas
+        headers = {
+            "codigo": "Código",
+            "nome": "Nome",
+            "endereco": "Endereço",
+            "bairro": "Bairro",
+            "cidade": "Cidade",
+            "responsavel": "Responsável",
+            "telefone": "Telefone",
+        }
+
+        for col in columns:
+            tree.heading(col, text=headers[col])
+            tree.column(col, width=120)
+
+        # Adicionar scrollbars
+        y_scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=tree.yview)
+        x_scrollbar = ttk.Scrollbar(
+            table_frame, orient=tk.HORIZONTAL, command=tree.xview
+        )
+        tree.configure(yscrollcommand=y_scrollbar.set, xscrollcommand=x_scrollbar.set)
+
+        # Posicionar scrollbars
+        y_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        x_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        # Preencher dados
+        for _, row in self.df_casas.iterrows():
+            values = [row.get(col, "") for col in columns]
+            tree.insert("", tk.END, values=values)
+
+        # Adicionar menu de contexto
+        def show_context_menu(event):
+            item = tree.selection()
+            if item:
+                menu = tk.Menu(window, tearoff=0)
+                menu.add_command(
+                    label="✏️ Editar",
+                    command=lambda: self.add_edit_casa(
+                        window, tree.item(item[0])["values"]
+                    ),
+                )
+                menu.add_command(
+                    label="🗑️ Excluir", command=lambda: self.delete_casa(tree, item[0])
+                )
+                menu.post(event.x_root, event.y_root)
+
+        tree.bind("<Button-3>", show_context_menu)  # Botão direito do mouse
+        tree.bind(
+            "<Double-1>",
+            lambda e: self.add_edit_casa(
+                window,
+                tree.item(tree.selection()[0])["values"] if tree.selection() else None,
+            ),
+        )  # Duplo clique
+
+    def add_edit_casa(self, parent_window, values=None):
+        """Abre janela para adicionar ou editar casa de oração"""
+        # Criar nova janela
+        window = tk.Toplevel(parent_window)
+        window.title("Adicionar Casa" if values is None else "Editar Casa")
+        window.geometry("500x600")
+        window.configure(bg=self.design_system["colors"]["background"])
+        window.transient(parent_window)
+        window.grab_set()
+
+        # Frame principal
+        main_frame = ttk.Frame(window, style="Card.TFrame")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        # Campos
+        fields = [
+            ("codigo", "Código:"),
+            ("nome", "Nome:"),
+            ("endereco", "Endereço:"),
+            ("bairro", "Bairro:"),
+            ("cidade", "Cidade:"),
+            ("responsavel", "Responsável:"),
+            ("telefone", "Telefone:"),
+        ]
+
+        entries = {}
+        for i, (field, label) in enumerate(fields):
+            # Frame para cada campo
+            field_frame = ttk.Frame(main_frame, style="Card.TFrame")
+            field_frame.pack(fill=tk.X, padx=10, pady=5)
+
+            # Label
+            ttk.Label(field_frame, text=label, style="SubHeader.TLabel").pack(
+                anchor=tk.W
+            )
+
+            # Entry
+            entry = ttk.Entry(field_frame, font=("Helvetica", 12))
+            entry.pack(fill=tk.X, pady=(5, 0))
+
+            if values is not None:
+                entry.insert(0, str(values[i]))
+
+            entries[field] = entry
+
+        # Frame para botões
+        button_frame = ttk.Frame(main_frame, style="Card.TFrame")
+        button_frame.pack(fill=tk.X, padx=10, pady=20)
+
+        # Botão Salvar
+        save_btn = tk.Button(
+            button_frame,
+            text="💾 Salvar",
+            command=lambda: self.save_casa(window, entries, values),
+            font=("Helvetica", 12),
+            bg="#4CAF50",
+            fg="white",
+            relief="flat",
+            cursor="hand2",
+            padx=20,
+            pady=5,
+        )
+        save_btn.pack(side=tk.RIGHT, padx=5)
+
+        # Botão Cancelar
+        cancel_btn = tk.Button(
+            button_frame,
+            text="❌ Cancelar",
+            command=window.destroy,
+            font=("Helvetica", 12),
+            bg="#f44336",
+            fg="white",
+            relief="flat",
+            cursor="hand2",
+            padx=20,
+            pady=5,
+        )
+        cancel_btn.pack(side=tk.RIGHT, padx=5)
+
+    def save_casa(self, window, entries, old_values=None):
+        """Salva os dados da casa de oração"""
+        # Coletar dados dos campos
+        new_data = {field: entry.get().strip() for field, entry in entries.items()}
+
+        # Validar campos obrigatórios
+        required_fields = ["codigo", "nome"]
+        missing_fields = [field for field in required_fields if not new_data[field]]
+
+        if missing_fields:
+            self.show_warning_message(
+                f"Os seguintes campos são obrigatórios:\n{', '.join(missing_fields)}"
+            )
+            return
+
+        try:
+            # Se estiver editando, remover a linha antiga
+            if old_values is not None:
+                old_codigo = str(old_values[0])
+                self.df_casas = self.df_casas[
+                    self.df_casas["codigo"].astype(str) != old_codigo
+                ]
+
+            # Adicionar nova linha
+            self.df_casas = pd.concat(
+                [self.df_casas, pd.DataFrame([new_data])], ignore_index=True
+            )
+
+            # Salvar no arquivo
+            self.data_manager.save_casas(self.df_casas)
+
+            # Fechar janela e atualizar visualização
+            window.destroy()
+            self.view_casas()
+
+            self.show_success_message("Casa de oração salva com sucesso!")
+        except Exception as e:
+            self.show_error_message(f"Erro ao salvar casa de oração: {str(e)}")
+
+    def delete_casa(self, tree, item):
+        """Exclui uma casa de oração"""
+        if messagebox.askyesno(
+            "Confirmar", "Deseja realmente excluir esta casa de oração?"
+        ):
+            values = tree.item(item)["values"]
+            codigo = str(values[0])
+
+            try:
+                # Remover do DataFrame
+                self.df_casas = self.df_casas[
+                    self.df_casas["codigo"].astype(str) != codigo
+                ]
+
+                # Salvar no arquivo
+                self.data_manager.save_casas(self.df_casas)
+
+                # Remover da árvore
+                tree.delete(item)
+
+                self.show_success_message("Casa de oração excluída com sucesso!")
+            except Exception as e:
+                self.show_error_message(f"Erro ao excluir casa de oração: {str(e)}")
 
     def plot_graph(self):
         """Plota o gráfico com estilo moderno"""
@@ -191,7 +507,14 @@ class GestaoVistaApp:
                 self.df_gestao = self.df_gestao.dropna(axis=1, how="all")
                 self.coluna_codigo = self.df_gestao.columns[0]
                 self.caracteristicas = self.df_gestao.columns[1:].tolist()
+
+                # Atualizar combobox e resetar seleção
                 self.caracteristica_combo["values"] = self.caracteristicas
+                self.caracteristica_var.set("Escolha uma característica...")
+                self.on_caracteristica_selected(False)  # Esconder botão de exportar
+
+                # Salvar dados
+                self.data_manager.save_gestao(self.df_gestao)
 
                 self.plot_graph()
                 self.show_success_message(
@@ -218,6 +541,9 @@ class GestaoVistaApp:
                 else:
                     self.df_casas = pd.read_excel(file_path, engine="openpyxl")
 
+                # Salvar dados
+                self.data_manager.save_casas(self.df_casas)
+
                 self.show_success_message(
                     "Arquivo de Casas de Oração carregado com sucesso!"
                 )
@@ -242,6 +568,10 @@ class GestaoVistaApp:
             return
 
         try:
+            # Garantir que coluna_codigo está definida
+            if self.coluna_codigo is None:
+                self.coluna_codigo = self.df_gestao.columns[0]
+
             # Identificar casas faltantes
             valores = self.df_gestao[caracteristica].fillna("").astype(str)
             casas_faltantes = self.df_gestao[~valores.str.upper().str.strip().eq("X")][

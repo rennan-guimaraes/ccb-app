@@ -27,7 +27,15 @@ def lighten_color(hex_color, factor=1.2):
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
-def create_sidebar(root, load_gestao_callback, load_casas_callback, export_callback):
+def create_sidebar(
+    root,
+    load_gestao_callback,
+    load_casas_callback,
+    export_callback,
+    clear_gestao_callback,
+    clear_casas_callback,
+    view_casas_callback,
+):
     # Frame externo para borda
     outer_sidebar = tk.Frame(
         root,
@@ -60,19 +68,46 @@ def create_sidebar(root, load_gestao_callback, load_casas_callback, export_callb
             "enabled": True,
         },
         {
+            "icon": "🗑️",
+            "text": "Limpar\nGestão à Vista",
+            "description": "Limpar dados do arquivo de gestão",
+            "command": clear_gestao_callback,
+            "color": "#f44336",  # vermelho
+            "row": 2,
+            "enabled": True,
+        },
+        {
             "icon": "📁",
             "text": "Carregar\nCasas de Oração",
             "description": "Importar lista de casas",
             "command": load_casas_callback,
             "color": "#4CAF50",  # primary mais vibrante
-            "row": 2,
+            "row": 3,
+            "enabled": True,
+        },
+        {
+            "icon": "🗑️",
+            "text": "Limpar\nCasas de Oração",
+            "description": "Limpar dados das casas",
+            "command": clear_casas_callback,
+            "color": "#f44336",  # vermelho
+            "row": 4,
+            "enabled": True,
+        },
+        {
+            "icon": "👁️",
+            "text": "Visualizar\nCasas de Oração",
+            "description": "Ver e editar casas cadastradas",
+            "command": view_casas_callback,
+            "color": "#2196F3",  # azul
+            "row": 5,
             "enabled": True,
         },
     ]
 
     # Container para o botão de exportar
     export_container = ttk.Frame(sidebar, style="Sidebar.TFrame")
-    export_container.grid(row=3, column=0, pady=(0, 20), sticky="ew")
+    export_container.grid(row=6, column=0, pady=(0, 20), sticky="ew")
     export_container.grid_columnconfigure(0, weight=1)
     export_container.grid_remove()  # Inicialmente escondido
 
@@ -256,7 +291,6 @@ def create_controls(main_frame, caracteristica_var, on_selection_change=None):
 
     def on_caracteristica_change(*args):
         selected = caracteristica_var.get()
-        print(f"Mudança de característica detectada: '{selected}'")  # Debug
         is_valid = selected and selected != "Escolha uma característica..."
 
         if is_valid:
@@ -275,7 +309,6 @@ def create_controls(main_frame, caracteristica_var, on_selection_change=None):
 
     def on_combo_select(event):
         selected = combo.get()
-        print(f"Seleção do combo: '{selected}'")  # Debug
         if selected != "Escolha uma característica...":
             caracteristica_var.set(selected)
             feedback_label.configure(
@@ -284,8 +317,15 @@ def create_controls(main_frame, caracteristica_var, on_selection_change=None):
             )
             if on_selection_change:
                 on_selection_change(True)
+        else:
+            feedback_label.configure(
+                text="❌ Nenhuma característica selecionada",
+                foreground=DESIGN_SYSTEM["colors"]["error"],
+            )
+            if on_selection_change:
+                on_selection_change(False)
 
-    caracteristica_var.trace("w", on_caracteristica_change)
+    caracteristica_var.trace_add("write", on_caracteristica_change)
     combo.bind("<<ComboboxSelected>>", on_combo_select)
 
     return controls_frame, combo, feedback_label
