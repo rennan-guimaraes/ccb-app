@@ -218,16 +218,17 @@ def create_controls(main_frame, caracteristica_var, on_selection_change=None):
     )
     text_label.grid(row=0, column=1)
 
-    # Combobox moderno com estilo dark
+    # Combobox moderno com estilo dark e maior
     combo = ttk.Combobox(
         controls_frame,
         textvariable=caracteristica_var,
         style="Custom.TCombobox",
-        width=50,
-        font=("Helvetica", 12),
+        width=60,
+        font=("Helvetica", 14),
         state="readonly",
+        height=15,
     )
-    combo.grid(row=0, column=1, sticky="ew", padx=20)
+    combo.grid(row=0, column=1, sticky="ew", padx=20, ipady=5)
 
     # Adicionar placeholder
     combo.set("Escolha uma característica...")
@@ -238,7 +239,7 @@ def create_controls(main_frame, caracteristica_var, on_selection_change=None):
         text="",
         style="Caption.TLabel",
     )
-    feedback_label.grid(row=1, column=1, sticky="w", padx=20, pady=(5, 0))
+    feedback_label.grid(row=1, column=1, sticky="w", padx=20, pady=(8, 0))
 
     def on_caracteristica_change(*args):
         selected = caracteristica_var.get()

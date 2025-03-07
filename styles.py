@@ -148,8 +148,10 @@ def setup_styles():
         foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
         arrowcolor=DESIGN_SYSTEM["colors"]["text"]["primary"],
         relief="flat",
-        borderwidth=0,
-        padding=DESIGN_SYSTEM["spacing"]["sm"],
+        borderwidth=1,
+        padding=15,
+        selectbackground=DESIGN_SYSTEM["colors"]["states"]["selected"],
+        selectforeground=DESIGN_SYSTEM["colors"]["text"]["primary"],
     )
 
     style.map(
@@ -157,9 +159,14 @@ def setup_styles():
         fieldbackground=[
             ("readonly", DESIGN_SYSTEM["colors"]["surface"]),
             ("active", DESIGN_SYSTEM["colors"]["surface_light"]),
+            ("focus", DESIGN_SYSTEM["colors"]["surface_light"]),
         ],
         selectbackground=[("readonly", DESIGN_SYSTEM["colors"]["states"]["selected"])],
         selectforeground=[("readonly", DESIGN_SYSTEM["colors"]["text"]["primary"])],
+        bordercolor=[
+            ("focus", DESIGN_SYSTEM["colors"]["primary"]),
+            ("hover", DESIGN_SYSTEM["colors"]["primary_light"]),
+        ],
     )
 
     # Estilos dos botões
