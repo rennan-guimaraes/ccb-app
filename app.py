@@ -5,12 +5,19 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 
+from styles import setup_styles
+from components import create_sidebar, create_main_content, create_controls
+
 
 class GestaoVistaApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Gestão à Vista - Casas de Oração")
-        self.root.geometry("1200x800")
+
+        # Configurar estilo e obter sistema de design primeiro
+        self.design_system = setup_styles()
+
+        # Depois configurar a janela que usa o design system
+        self.setup_window()
 
         self.df_gestao = None
         self.df_casas = None
@@ -18,39 +25,131 @@ class GestaoVistaApp:
 
         self.setup_ui()
 
+    def setup_window(self):
+        """Configura a janela principal"""
+        self.root.title("Gestão à Vista - Casas de Oração")
+        self.root.geometry("1400x900")
+        self.root.configure(bg=self.design_system["colors"]["background"])
+
+        # Configurar grid principal
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=3)  # Área principal maior
+        self.root.grid_columnconfigure(1, weight=1)  # Sidebar menor
+
     def setup_ui(self):
-        # Frame principal
-        main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        """Configura a interface do usuário"""
+        # Criar componentes principais com novo design system
+        self.main_frame, self.graph_frame = create_main_content(self.root)
 
-        # Botões para carregar arquivos
-        ttk.Button(
-            main_frame, text="Carregar Gestão à Vista", command=self.load_gestao
-        ).grid(row=0, column=0, pady=5)
-        ttk.Button(
-            main_frame, text="Carregar Casas de Oração", command=self.load_casas
-        ).grid(row=0, column=1, pady=5)
-
-        # Frame para o gráfico
-        self.graph_frame = ttk.Frame(main_frame)
-        self.graph_frame.grid(row=1, column=0, columnspan=2, pady=10)
-
-        # Combobox para selecionar característica
-        ttk.Label(main_frame, text="Selecione a característica:").grid(
-            row=2, column=0, pady=5
-        )
+        # Criar controles
         self.caracteristica_var = tk.StringVar()
-        self.caracteristica_combo = ttk.Combobox(
-            main_frame, textvariable=self.caracteristica_var
+        self.controls_frame, self.caracteristica_combo, self.feedback_label = (
+            create_controls(self.main_frame, self.caracteristica_var)
         )
-        self.caracteristica_combo.grid(row=2, column=1, pady=5)
 
-        # Botão para exportar faltantes
-        ttk.Button(
-            main_frame, text="Exportar Casas Faltantes", command=self.export_faltantes
-        ).grid(row=3, column=0, columnspan=2, pady=5)
+        # Criar sidebar
+        self.sidebar = create_sidebar(
+            self.root, self.load_gestao, self.load_casas, self.export_faltantes
+        )
+
+    def plot_graph(self):
+        """Plota o gráfico com estilo moderno"""
+        if self.df_gestao is None:
+            return
+
+        # Limpar frame do gráfico
+        for widget in self.graph_frame.winfo_children():
+            widget.destroy()
+
+        # Configurar estilo do gráfico
+        plt.style.use("dark_background")
+        fig, ax = plt.subplots(
+            figsize=(12, 7), facecolor=self.design_system["colors"]["background"]
+        )
+        ax.set_facecolor(self.design_system["colors"]["surface"])
+
+        # Calcular contagem de casas para cada característica
+        contagens = []
+        for caracteristica in self.caracteristicas:
+            valores = self.df_gestao[caracteristica].fillna("").astype(str)
+            contagem = valores.str.upper().str.strip().eq("X").sum()
+            contagens.append(contagem)
+
+        # Criar gráfico de barras com cores do design system
+        colors = plt.cm.viridis(np.linspace(0, 1, len(self.caracteristicas)))
+        bars = ax.bar(range(len(self.caracteristicas)), contagens, color=colors)
+
+        # Configurar eixos e labels com estilo consistente
+        ax.set_xticks(range(len(self.caracteristicas)))
+        ax.set_xticklabels(
+            self.caracteristicas,
+            rotation=45,
+            ha="right",
+            fontsize=10,
+            color=self.design_system["colors"]["text"]["secondary"],
+        )
+        ax.set_ylabel(
+            "Número de Casas de Oração",
+            fontsize=12,
+            color=self.design_system["colors"]["text"]["primary"],
+            labelpad=10,
+        )
+        ax.set_title(
+            "Características das Casas de Oração",
+            fontsize=14,
+            color=self.design_system["colors"]["text"]["primary"],
+            pad=20,
+        )
+
+        # Personalizar grid e bordas
+        ax.grid(
+            True,
+            axis="y",
+            linestyle="--",
+            alpha=0.2,
+            color=self.design_system["colors"]["border"],
+        )
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color(self.design_system["colors"]["border"])
+        ax.spines["bottom"].set_color(self.design_system["colors"]["border"])
+
+        # Adicionar valores sobre as barras
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                height,
+                f"{int(height)}",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                fontweight="bold",
+                color=self.design_system["colors"]["text"]["primary"],
+            )
+
+        # Ajustar layout
+        plt.tight_layout()
+
+        # Incorporar gráfico na interface
+        canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+    def show_success_message(self, message):
+        """Mostra mensagem de sucesso estilizada"""
+        messagebox.showinfo("✅ Sucesso", message)
+
+    def show_error_message(self, message):
+        """Mostra mensagem de erro estilizada"""
+        messagebox.showerror("❌ Erro", message)
+
+    def show_warning_message(self, message):
+        """Mostra mensagem de aviso estilizada"""
+        messagebox.showwarning("⚠️ Aviso", message)
 
     def load_gestao(self):
+        """Carrega arquivo de Gestão à Vista"""
         file_path = filedialog.askopenfilename(
             title="Selecione o arquivo de Gestão à Vista",
             filetypes=[
@@ -70,29 +169,23 @@ class GestaoVistaApp:
                     )
 
                 # Limpar e preparar o DataFrame
-                # Remover colunas sem nome ou com nome 'Unnamed'
                 self.df_gestao = self.df_gestao.loc[
                     :, ~self.df_gestao.columns.str.contains("^Unnamed")
                 ]
-
-                # Remover colunas que são totalmente vazias
                 self.df_gestao = self.df_gestao.dropna(axis=1, how="all")
-
-                # Pegar a primeira coluna como código da casa de oração
                 self.coluna_codigo = self.df_gestao.columns[0]
-
-                # Pegar as características (todas as colunas exceto a primeira)
                 self.caracteristicas = self.df_gestao.columns[1:].tolist()
                 self.caracteristica_combo["values"] = self.caracteristicas
 
                 self.plot_graph()
-                messagebox.showinfo(
-                    "Sucesso", "Arquivo de Gestão à Vista carregado com sucesso!"
+                self.show_success_message(
+                    "Arquivo de Gestão à Vista carregado com sucesso!"
                 )
             except Exception as e:
-                messagebox.showerror("Erro", f"Erro ao carregar arquivo: {str(e)}")
+                self.show_error_message(f"Erro ao carregar arquivo: {str(e)}")
 
     def load_casas(self):
+        """Carrega arquivo de Casas de Oração"""
         file_path = filedialog.askopenfilename(
             title="Selecione o arquivo de Casas de Oração",
             filetypes=[
@@ -109,96 +202,120 @@ class GestaoVistaApp:
                 else:
                     self.df_casas = pd.read_excel(file_path, engine="openpyxl")
 
-                messagebox.showinfo(
-                    "Sucesso", "Arquivo de Casas de Oração carregado com sucesso!"
+                self.show_success_message(
+                    "Arquivo de Casas de Oração carregado com sucesso!"
                 )
             except Exception as e:
-                messagebox.showerror("Erro", f"Erro ao carregar arquivo: {str(e)}")
-
-    def plot_graph(self):
-        if self.df_gestao is None:
-            return
-
-        # Limpar frame do gráfico
-        for widget in self.graph_frame.winfo_children():
-            widget.destroy()
-
-        # Criar novo gráfico
-        fig, ax = plt.subplots(figsize=(10, 6))
-
-        # Calcular contagem de casas para cada característica
-        contagens = []
-        for caracteristica in self.caracteristicas:
-            # Converte para string e trata valores nulos
-            valores = self.df_gestao[caracteristica].fillna("").astype(str)
-            # Conta valores 'X' (case insensitive)
-            contagem = valores.str.upper().str.strip().eq("X").sum()
-            contagens.append(contagem)
-
-        # Criar gráfico de barras
-        bars = ax.bar(range(len(self.caracteristicas)), contagens)
-        ax.set_xticks(range(len(self.caracteristicas)))
-        ax.set_xticklabels(self.caracteristicas, rotation=45, ha="right")
-        ax.set_ylabel("Número de Casas de Oração")
-        ax.set_title("Características das Casas de Oração")
-
-        # Adicionar valores sobre as barras
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(
-                bar.get_x() + bar.get_width() / 2.0,
-                height,
-                f"{int(height)}",
-                ha="center",
-                va="bottom",
-            )
-
-        # Ajustar layout
-        plt.tight_layout()
-
-        # Incorporar gráfico na interface
-        canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+                self.show_error_message(f"Erro ao carregar arquivo: {str(e)}")
 
     def export_faltantes(self):
+        """Exporta relatório de casas faltantes"""
         if self.df_gestao is None:
-            messagebox.showwarning(
-                "Aviso", "Carregue primeiro o arquivo de Gestão à Vista!"
-            )
+            self.show_warning_message("Carregue primeiro o arquivo de Gestão à Vista!")
             return
 
         caracteristica = self.caracteristica_var.get()
-        if not caracteristica:
-            messagebox.showwarning("Aviso", "Selecione uma característica!")
+        print(
+            f"Característica selecionada para exportação: '{caracteristica}'"
+        )  # Debug
+        print(f"Características disponíveis: {self.caracteristicas}")  # Debug
+
+        if not caracteristica or caracteristica == "Escolha uma característica...":
+            self.show_warning_message("Selecione uma característica para exportar!")
             return
 
-        # Identificar casas faltantes (valores diferentes de 'X')
-        valores = self.df_gestao[caracteristica].fillna("").astype(str)
-        casas_faltantes = self.df_gestao[~valores.str.upper().str.strip().eq("X")][
-            self.coluna_codigo
-        ]
-
-        # Se tiver o arquivo de nomes das casas, fazer o merge
-        if self.df_casas is not None:
-            resultado = pd.merge(
-                casas_faltantes.to_frame(),
-                self.df_casas,
-                left_on=self.coluna_codigo,
-                right_on="codigo",
-                how="left",
+        if caracteristica not in self.caracteristicas:
+            self.show_error_message(
+                f"Característica '{caracteristica}' não encontrada na planilha!"
             )
-        else:
-            resultado = casas_faltantes.to_frame()
+            return
 
-        # Salvar resultado
-        file_path = filedialog.asksaveasfilename(
-            defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")]
-        )
+        try:
+            print(
+                f"Iniciando exportação para característica: '{caracteristica}'"
+            )  # Debug
+            # Identificar casas faltantes
+            valores = self.df_gestao[caracteristica].fillna("").astype(str)
+            casas_faltantes = self.df_gestao[~valores.str.upper().str.strip().eq("X")][
+                [self.coluna_codigo, caracteristica]
+            ]
 
-        if file_path:
-            resultado.to_excel(file_path, index=False)
-            messagebox.showinfo("Sucesso", "Arquivo exportado com sucesso!")
+            # Adicionar coluna de status
+            casas_faltantes["Status"] = "Faltante"
+
+            # Merge com dados das casas se disponível
+            if self.df_casas is not None:
+                colunas_casas = [
+                    "codigo",
+                    "nome",
+                    "endereco",
+                    "bairro",
+                    "cidade",
+                    "responsavel",
+                    "telefone",
+                ]
+                colunas_disponiveis = [
+                    col for col in colunas_casas if col in self.df_casas.columns
+                ]
+
+                resultado = pd.merge(
+                    casas_faltantes,
+                    self.df_casas[colunas_disponiveis],
+                    left_on=self.coluna_codigo,
+                    right_on="codigo",
+                    how="left",
+                )
+            else:
+                resultado = casas_faltantes
+
+            # Salvar resultado
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".xlsx",
+                filetypes=[("Excel files", "*.xlsx")],
+                title=f"Salvar relatório de casas faltantes - {caracteristica}",
+                initialfile=f"casas_faltantes_{caracteristica.lower().replace(' ', '_')}.xlsx",
+            )
+
+            if file_path:
+                # Reorganizar colunas para melhor visualização
+                if self.df_casas is not None:
+                    colunas_ordem = [
+                        self.coluna_codigo,
+                        "nome",
+                        "endereco",
+                        "bairro",
+                        "cidade",
+                        "responsavel",
+                        "telefone",
+                        caracteristica,
+                        "Status",
+                    ]
+                    colunas_ordem = [
+                        col for col in colunas_ordem if col in resultado.columns
+                    ]
+                    resultado = resultado[colunas_ordem]
+
+                # Formatar e salvar o Excel
+                with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
+                    resultado.to_excel(
+                        writer, index=False, sheet_name="Casas Faltantes"
+                    )
+                    # Ajustar largura das colunas
+                    worksheet = writer.sheets["Casas Faltantes"]
+                    for idx, col in enumerate(resultado.columns):
+                        max_length = max(
+                            resultado[col].astype(str).apply(len).max(), len(str(col))
+                        )
+                        worksheet.column_dimensions[chr(65 + idx)].width = (
+                            max_length + 2
+                        )
+
+                self.show_success_message(
+                    f"Relatório exportado com sucesso!\n"
+                    f"Total de casas faltantes: {len(resultado)}"
+                )
+        except Exception as e:
+            self.show_error_message(f"Erro ao exportar relatório: {str(e)}")
 
 
 if __name__ == "__main__":
