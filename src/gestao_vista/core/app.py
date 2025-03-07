@@ -604,10 +604,9 @@ class GestaoVistaApp:
                             "codigo": codigo,
                             "nome": casa.nome,
                             "endereco": casa.endereco,
-                            "bairro": casa.bairro,
-                            "cidade": casa.cidade,
-                            "responsavel": casa.responsavel,
-                            "telefone": casa.telefone,
+                            "tipo_imovel": casa.tipo_imovel,
+                            "observacoes": casa.observacoes,
+                            "status": casa.status,
                             caracteristica: row[caracteristica],
                             "Status": "Faltante",
                         }
