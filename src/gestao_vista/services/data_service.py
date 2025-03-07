@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 
 from ..models.casa_oracao import CasaOracao
+from ..utils.constants import normalizar_nome_documento
 
 
 class DataService:
@@ -120,29 +121,49 @@ class DataService:
             header_row: Linha que contém os cabeçalhos (None para primeira linha)
         """
         try:
-            # Primeiro, verificar se é um arquivo .xls (formato antigo)
-            if file_path.lower().endswith(".xls"):
-                # Para arquivos .xls, usar pandas com engine='xlrd'
-                try:
-                    return pd.read_excel(
-                        file_path,
-                        header=header_row,
-                        engine="xlrd",
-                        dtype=str,  # Ler tudo como string para evitar problemas de tipo
-                    )
-                except Exception as e:
-                    print(f"Erro ao ler arquivo .xls com xlrd: {e}")
-                    raise ValueError(
-                        "Erro ao ler arquivo .xls. O arquivo pode estar corrompido."
-                    )
+            # Primeiro, tentar com openpyxl (para .xlsx)
+            try:
+                return pd.read_excel(
+                    file_path,
+                    header=header_row,
+                    engine="openpyxl",
+                    dtype=str,
+                )
+            except Exception as e:
+                print(f"Erro ao tentar ler com openpyxl: {e}")
+                pass
 
-            # Para outros formatos (.xlsx, etc), usar openpyxl
+            # Se falhar, tentar com xlrd (para .xls)
+            try:
+                return pd.read_excel(
+                    file_path,
+                    header=header_row,
+                    engine="xlrd",
+                    dtype=str,
+                )
+            except Exception as e:
+                print(f"Erro ao tentar ler com xlrd: {e}")
+                pass
+
+            # Se ainda falhar, tentar com odf (para .ods)
+            try:
+                return pd.read_excel(
+                    file_path,
+                    header=header_row,
+                    engine="odf",
+                    dtype=str,
+                )
+            except Exception as e:
+                print(f"Erro ao tentar ler com odf: {e}")
+                pass
+
+            # Se todas as tentativas falharem, tentar uma última vez com o engine padrão
             return pd.read_excel(
                 file_path,
                 header=header_row,
-                engine="openpyxl",
-                dtype=str,  # Ler tudo como string para evitar problemas de tipo
+                dtype=str,
             )
+
         except Exception as e:
             print(f"Erro ao ler arquivo Excel: {e}")
             raise ValueError(
@@ -180,6 +201,42 @@ class DataService:
             # Garantir que a primeira coluna seja o código
             if "codigo" not in str(df.columns[0]).lower():
                 df = df.rename(columns={df.columns[0]: "codigo"})
+
+            # Normalizar nomes das colunas usando o dicionário DOCUMENTOS
+            colunas_normalizadas = {}
+            colunas_para_remover = []
+
+            # Primeiro passo: normalizar todas as colunas
+            for col in df.columns:
+                if col.lower() != "codigo":  # Não normalizar a coluna código
+                    try:
+                        nome_normalizado = normalizar_nome_documento(col)
+
+                        if nome_normalizado in colunas_normalizadas:
+                            # Se já existe uma coluna com esse nome normalizado,
+                            # combinar os valores (X em qualquer uma das colunas = X)
+                            df[colunas_normalizadas[nome_normalizado]] = (
+                                df[colunas_normalizadas[nome_normalizado]]
+                                .fillna("")
+                                .str.upper()
+                                .str.strip()
+                                .combine(
+                                    df[col].fillna("").str.upper().str.strip(),
+                                    lambda x, y: "X" if "X" in [x, y] else "",
+                                )
+                            )
+                            colunas_para_remover.append(col)
+                        else:
+                            colunas_normalizadas[nome_normalizado] = nome_normalizado
+                            if col != nome_normalizado:
+                                df = df.rename(columns={col: nome_normalizado})
+                    except Exception as e:
+                        print(f"Erro ao normalizar coluna {col}: {e}")
+                        continue
+
+            # Remover colunas duplicadas
+            if colunas_para_remover:
+                df = df.drop(columns=colunas_para_remover)
 
             # Converter todos os valores para string e limpar
             for col in df.columns:

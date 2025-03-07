@@ -9,6 +9,7 @@ from typing import Optional, List, Dict, Any, Callable
 from ..models.casa_oracao import CasaOracao
 from ..services.data_service import DataService
 from ..utils.design_system import DESIGN_SYSTEM, setup_styles
+from ..utils.constants import is_documento_obrigatorio
 from ..ui.components import (
     create_sidebar,
     create_main_content,
@@ -148,16 +149,33 @@ class GestaoVistaApp:
         )
         ax.set_facecolor(DESIGN_SYSTEM["colors"]["background"]["paper"])
 
-        # Calcular dados
+        # Calcular dados e definir cores
         contagens = []
+        cores = []
+        total_casas = len(self.df_gestao)
+
         for caracteristica in self.caracteristicas:
             valores = self.df_gestao[caracteristica].fillna("").astype(str)
             contagem = valores.str.upper().str.strip().eq("X").sum()
             contagens.append(contagem)
 
+            # Definir cor baseada se é documento obrigatório
+            if is_documento_obrigatorio(caracteristica):
+                cores.append(
+                    DESIGN_SYSTEM["colors"]["error"]
+                )  # Vermelho para obrigatórios
+            else:
+                cores.append(
+                    DESIGN_SYSTEM["colors"]["primary"]
+                )  # Cor padrão para os demais
+
         # Criar gráfico
-        colors = plt.cm.viridis(np.linspace(0, 1, len(self.caracteristicas)))
-        bars = ax.bar(range(len(self.caracteristicas)), contagens, color=colors)
+        bars = ax.bar(range(len(self.caracteristicas)), contagens, color=cores)
+
+        # Adicionar linha de 100% para documentos obrigatórios
+        ax.axhline(
+            y=total_casas, color="red", linestyle="--", alpha=0.3, label="Meta (100%)"
+        )
 
         # Configurar eixos e labels
         ax.set_xticks(range(len(self.caracteristicas)))
@@ -177,7 +195,7 @@ class GestaoVistaApp:
         )
 
         ax.set_title(
-            "Características das Casas de Oração",
+            "Características das Casas de Oração\n(Documentos obrigatórios em vermelho)",
             fontsize=14,
             color=DESIGN_SYSTEM["colors"]["text"]["primary"],
             pad=20,
@@ -197,19 +215,23 @@ class GestaoVistaApp:
         ax.spines["left"].set_color(DESIGN_SYSTEM["colors"]["border"])
         ax.spines["bottom"].set_color(DESIGN_SYSTEM["colors"]["border"])
 
-        # Adicionar valores sobre as barras
+        # Adicionar valores e porcentagens sobre as barras
         for bar in bars:
             height = bar.get_height()
+            percentage = (height / total_casas) * 100
             ax.text(
                 bar.get_x() + bar.get_width() / 2.0,
                 height,
-                f"{int(height)}",
+                f"{int(height)}\n({percentage:.1f}%)",
                 ha="center",
                 va="bottom",
                 fontsize=10,
                 fontweight="bold",
                 color=DESIGN_SYSTEM["colors"]["text"]["primary"],
             )
+
+        # Adicionar legenda
+        ax.legend()
 
         # Ajustar layout e exibir
         plt.tight_layout()
