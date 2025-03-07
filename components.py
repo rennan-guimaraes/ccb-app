@@ -57,6 +57,7 @@ def create_sidebar(root, load_gestao_callback, load_casas_callback, export_callb
             "command": load_gestao_callback,
             "color": "#4CAF50",  # primary mais vibrante
             "row": 1,
+            "enabled": True,
         },
         {
             "icon": "📁",
@@ -65,17 +66,56 @@ def create_sidebar(root, load_gestao_callback, load_casas_callback, export_callb
             "command": load_casas_callback,
             "color": "#4CAF50",  # primary mais vibrante
             "row": 2,
-        },
-        {
-            "icon": "📥",
-            "text": "Exportar\nCasas Faltantes",
-            "description": "Gerar relatório de pendências",
-            "command": export_callback,
-            "color": "#2196F3",  # secondary mais vibrante
-            "row": 3,
+            "enabled": True,
         },
     ]
 
+    # Container para o botão de exportar
+    export_container = ttk.Frame(sidebar, style="Sidebar.TFrame")
+    export_container.grid(row=3, column=0, pady=(0, 20), sticky="ew")
+    export_container.grid_columnconfigure(0, weight=1)
+    export_container.grid_remove()  # Inicialmente escondido
+
+    # Botão de exportar
+    export_btn = tk.Button(
+        export_container,
+        text="📥\nExportar\nCasas Faltantes",
+        command=export_callback,
+        font=("Helvetica", 16, "bold"),
+        bg="#2196F3",  # secondary mais vibrante
+        fg="white",
+        height=4,
+        width=20,
+        relief="flat",
+        borderwidth=0,
+        activebackground=darken_color("#2196F3", 0.7),
+        activeforeground="white",
+        cursor="hand2",
+    )
+
+    # Efeitos de hover para o botão de exportar
+    def on_enter(e):
+        export_btn.configure(bg=lighten_color("#2196F3", 1.1))
+        export_btn.configure(relief="solid")
+
+    def on_leave(e):
+        export_btn.configure(bg="#2196F3")
+        export_btn.configure(relief="flat")
+
+    export_btn.bind("<Enter>", on_enter)
+    export_btn.bind("<Leave>", on_leave)
+    export_btn.grid(row=0, column=0, sticky="ew")
+
+    # Descrição do botão de exportar
+    export_desc = ttk.Label(
+        export_container,
+        text="Gerar relatório de pendências",
+        style="Caption.TLabel",
+        anchor="center",
+    )
+    export_desc.grid(row=1, column=0, pady=(5, 0), sticky="ew")
+
+    # Criar os outros botões
     for btn_data in buttons_data:
         # Container para cada botão e sua descrição
         btn_container = ttk.Frame(sidebar, style="Sidebar.TFrame")
@@ -83,10 +123,8 @@ def create_sidebar(root, load_gestao_callback, load_casas_callback, export_callb
         btn_container.grid_columnconfigure(0, weight=1)
 
         # Calcular cores para diferentes estados
-        darker_color = darken_color(
-            btn_data["color"], 0.7
-        )  # Mais escuro para contraste
-        hover_color = lighten_color(btn_data["color"], 1.1)  # Mais claro para hover
+        darker_color = darken_color(btn_data["color"], 0.7)
+        hover_color = lighten_color(btn_data["color"], 1.1)
 
         # Botão principal com efeito de elevação
         btn = tk.Button(
@@ -103,7 +141,6 @@ def create_sidebar(root, load_gestao_callback, load_casas_callback, export_callb
             activebackground=darker_color,
             activeforeground="white",
             cursor="hand2",
-            disabledforeground="white",
         )
 
         # Efeitos de hover e clique
@@ -128,7 +165,7 @@ def create_sidebar(root, load_gestao_callback, load_casas_callback, export_callb
         )
         desc_label.grid(row=1, column=0, pady=(5, 0), sticky="ew")
 
-    return sidebar
+    return sidebar, (export_container, export_btn)
 
 
 def create_main_content(root):
@@ -177,7 +214,7 @@ def create_main_content(root):
     return main_frame, graph_frame
 
 
-def create_controls(main_frame, caracteristica_var):
+def create_controls(main_frame, caracteristica_var, on_selection_change=None):
     # Frame de controles com espaçamento
     controls_frame = ttk.Frame(main_frame, style="Background.TFrame")
     controls_frame.grid(row=2, column=0, pady=(30, 0), sticky="ew")
@@ -220,7 +257,9 @@ def create_controls(main_frame, caracteristica_var):
     def on_caracteristica_change(*args):
         selected = caracteristica_var.get()
         print(f"Mudança de característica detectada: '{selected}'")  # Debug
-        if selected and selected != "Escolha uma característica...":
+        is_valid = selected and selected != "Escolha uma característica..."
+
+        if is_valid:
             feedback_label.configure(
                 text=f"✅ Característica selecionada: {selected}",
                 foreground=DESIGN_SYSTEM["colors"]["success"],
@@ -231,6 +270,9 @@ def create_controls(main_frame, caracteristica_var):
                 foreground=DESIGN_SYSTEM["colors"]["error"],
             )
 
+        if on_selection_change:
+            on_selection_change(is_valid)
+
     def on_combo_select(event):
         selected = combo.get()
         print(f"Seleção do combo: '{selected}'")  # Debug
@@ -240,6 +282,8 @@ def create_controls(main_frame, caracteristica_var):
                 text=f"✅ Característica selecionada: {selected}",
                 foreground=DESIGN_SYSTEM["colors"]["success"],
             )
+            if on_selection_change:
+                on_selection_change(True)
 
     caracteristica_var.trace("w", on_caracteristica_change)
     combo.bind("<<ComboboxSelected>>", on_combo_select)

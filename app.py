@@ -22,6 +22,8 @@ class GestaoVistaApp:
         self.df_gestao = None
         self.df_casas = None
         self.caracteristicas = []
+        self.export_container = None
+        self.export_button = None
 
         self.setup_ui()
 
@@ -36,6 +38,16 @@ class GestaoVistaApp:
         self.root.grid_columnconfigure(0, weight=3)  # Área principal maior
         self.root.grid_columnconfigure(1, weight=1)  # Sidebar menor
 
+    def on_caracteristica_selected(self, is_valid):
+        """Callback para quando uma característica é selecionada/deselecionada"""
+        if self.export_container and self.export_button:
+            if is_valid:
+                self.export_container.grid()  # Mostrar o container
+                self.export_button.configure(state="normal")
+            else:
+                self.export_container.grid_remove()  # Esconder o container
+                self.export_button.configure(state="disabled")
+
     def setup_ui(self):
         """Configura a interface do usuário"""
         # Criar componentes principais com novo design system
@@ -44,11 +56,15 @@ class GestaoVistaApp:
         # Criar controles
         self.caracteristica_var = tk.StringVar()
         self.controls_frame, self.caracteristica_combo, self.feedback_label = (
-            create_controls(self.main_frame, self.caracteristica_var)
+            create_controls(
+                self.main_frame,
+                self.caracteristica_var,
+                self.on_caracteristica_selected,
+            )
         )
 
-        # Criar sidebar
-        self.sidebar = create_sidebar(
+        # Criar sidebar com botão de exportar escondido inicialmente
+        self.sidebar, (self.export_container, self.export_button) = create_sidebar(
             self.root, self.load_gestao, self.load_casas, self.export_faltantes
         )
 
@@ -215,11 +231,6 @@ class GestaoVistaApp:
             return
 
         caracteristica = self.caracteristica_var.get()
-        print(
-            f"Característica selecionada para exportação: '{caracteristica}'"
-        )  # Debug
-        print(f"Características disponíveis: {self.caracteristicas}")  # Debug
-
         if not caracteristica or caracteristica == "Escolha uma característica...":
             self.show_warning_message("Selecione uma característica para exportar!")
             return
@@ -231,40 +242,85 @@ class GestaoVistaApp:
             return
 
         try:
-            print(
-                f"Iniciando exportação para característica: '{caracteristica}'"
-            )  # Debug
             # Identificar casas faltantes
             valores = self.df_gestao[caracteristica].fillna("").astype(str)
             casas_faltantes = self.df_gestao[~valores.str.upper().str.strip().eq("X")][
                 [self.coluna_codigo, caracteristica]
             ]
-
-            # Adicionar coluna de status
             casas_faltantes["Status"] = "Faltante"
 
             # Merge com dados das casas se disponível
             if self.df_casas is not None:
-                colunas_casas = [
-                    "codigo",
-                    "nome",
-                    "endereco",
-                    "bairro",
-                    "cidade",
-                    "responsavel",
-                    "telefone",
-                ]
-                colunas_disponiveis = [
-                    col for col in colunas_casas if col in self.df_casas.columns
-                ]
+                # Mapeamento de colunas para padronização
+                mapeamento_colunas = {
+                    "codigo": ["codigo", "Código", "CODIGO", "CÓDIGO"],
+                    "nome": ["nome", "Nome", "NOME"],
+                    "endereco": [
+                        "endereco",
+                        "Endereco",
+                        "ENDERECO",
+                        "endereço",
+                        "Endereço",
+                        "ENDEREÇO",
+                    ],
+                    "bairro": ["bairro", "Bairro", "BAIRRO"],
+                    "cidade": ["cidade", "Cidade", "CIDADE"],
+                    "responsavel": [
+                        "responsavel",
+                        "Responsavel",
+                        "RESPONSAVEL",
+                        "responsável",
+                        "Responsável",
+                        "RESPONSÁVEL",
+                    ],
+                    "telefone": ["telefone", "Telefone", "TELEFONE"],
+                }
 
-                resultado = pd.merge(
-                    casas_faltantes,
-                    self.df_casas[colunas_disponiveis],
-                    left_on=self.coluna_codigo,
-                    right_on="codigo",
-                    how="left",
-                )
+                # Encontrar e padronizar colunas no df_casas
+                colunas_encontradas = {}
+                df_casas_padronizado = self.df_casas.copy()
+
+                for coluna_padrao, variantes in mapeamento_colunas.items():
+                    for variante in variantes:
+                        if variante in self.df_casas.columns:
+                            colunas_encontradas[coluna_padrao] = variante
+                            if variante != coluna_padrao:
+                                df_casas_padronizado = df_casas_padronizado.rename(
+                                    columns={variante: coluna_padrao}
+                                )
+                            break
+
+                if "codigo" not in colunas_encontradas:
+                    self.show_warning_message(
+                        "Não foi possível encontrar a coluna de código no arquivo de casas.\n"
+                        "Exportando apenas os dados básicos."
+                    )
+                    resultado = casas_faltantes
+                else:
+                    # Selecionar apenas as colunas encontradas e fazer o merge
+                    colunas_para_merge = ["codigo"] + [
+                        col for col in colunas_encontradas.keys() if col != "codigo"
+                    ]
+                    colunas_df_casas = [
+                        col
+                        for col in colunas_para_merge
+                        if col in df_casas_padronizado.columns
+                    ]
+
+                    resultado = pd.merge(
+                        casas_faltantes,
+                        df_casas_padronizado[colunas_df_casas],
+                        left_on=self.coluna_codigo,
+                        right_on="codigo",
+                        how="left",
+                    )
+
+                    # Remover coluna de código duplicada se necessário
+                    if (
+                        "codigo" in resultado.columns
+                        and resultado.columns[0] != "codigo"
+                    ):
+                        resultado = resultado.drop(columns=["codigo"])
             else:
                 resultado = casas_faltantes
 
@@ -277,23 +333,24 @@ class GestaoVistaApp:
             )
 
             if file_path:
-                # Reorganizar colunas para melhor visualização
-                if self.df_casas is not None:
-                    colunas_ordem = [
-                        self.coluna_codigo,
-                        "nome",
-                        "endereco",
-                        "bairro",
-                        "cidade",
-                        "responsavel",
-                        "telefone",
-                        caracteristica,
-                        "Status",
-                    ]
-                    colunas_ordem = [
-                        col for col in colunas_ordem if col in resultado.columns
-                    ]
-                    resultado = resultado[colunas_ordem]
+                # Definir ordem das colunas
+                colunas_ordem = [
+                    self.coluna_codigo,  # Código sempre primeiro
+                    "nome",
+                    "endereco",
+                    "bairro",
+                    "cidade",
+                    "responsavel",
+                    "telefone",
+                    caracteristica,
+                    "Status",
+                ]
+
+                # Filtrar apenas as colunas que existem
+                colunas_ordem = [
+                    col for col in colunas_ordem if col in resultado.columns
+                ]
+                resultado = resultado[colunas_ordem]
 
                 # Formatar e salvar o Excel
                 with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
@@ -315,6 +372,7 @@ class GestaoVistaApp:
                     f"Total de casas faltantes: {len(resultado)}"
                 )
         except Exception as e:
+            print(f"Erro detalhado: {str(e)}")  # Debug detalhado
             self.show_error_message(f"Erro ao exportar relatório: {str(e)}")
 
 
