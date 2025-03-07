@@ -109,6 +109,47 @@ class DataService:
             print(f"Erro ao limpar casas de oração: {e}")
             return False
 
+    def _read_excel_safe(
+        self, file_path: str, header_row: Optional[int] = None
+    ) -> pd.DataFrame:
+        """
+        Lê um arquivo Excel de forma segura, tentando diferentes métodos.
+
+        Args:
+            file_path: Caminho para o arquivo Excel
+            header_row: Linha que contém os cabeçalhos (None para primeira linha)
+        """
+        try:
+            # Primeiro, verificar se é um arquivo .xls (formato antigo)
+            if file_path.lower().endswith(".xls"):
+                # Para arquivos .xls, usar pandas com engine='xlrd'
+                try:
+                    return pd.read_excel(
+                        file_path,
+                        header=header_row,
+                        engine="xlrd",
+                        dtype=str,  # Ler tudo como string para evitar problemas de tipo
+                    )
+                except Exception as e:
+                    print(f"Erro ao ler arquivo .xls com xlrd: {e}")
+                    raise ValueError(
+                        "Erro ao ler arquivo .xls. O arquivo pode estar corrompido."
+                    )
+
+            # Para outros formatos (.xlsx, etc), usar openpyxl
+            return pd.read_excel(
+                file_path,
+                header=header_row,
+                engine="openpyxl",
+                dtype=str,  # Ler tudo como string para evitar problemas de tipo
+            )
+        except Exception as e:
+            print(f"Erro ao ler arquivo Excel: {e}")
+            raise ValueError(
+                "Não foi possível ler o arquivo Excel. "
+                "Certifique-se que o arquivo não está corrompido e está no formato correto (.xls ou .xlsx)"
+            )
+
     def import_gestao_from_excel(self, file_path: str) -> Optional[pd.DataFrame]:
         """
         Importa dados de gestão de um arquivo Excel.
@@ -117,34 +158,32 @@ class DataService:
             file_path: Caminho para o arquivo Excel
         """
         try:
-            # Tentar ler o arquivo com openpyxl primeiro (formato mais novo)
-            try:
-                df = pd.read_excel(file_path, header=14, engine="openpyxl")
-            except Exception as e:
-                print(f"Tentando formato antigo de Excel: {e}")
-                # Se falhar, tentar com xlrd para arquivos antigos
-                df = pd.read_excel(
-                    file_path,
-                    header=14,
-                    engine="xlrd",
-                    on_demand=True,  # Reduz uso de memória
-                )
+            # Ler o arquivo Excel
+            df = self._read_excel_safe(file_path, header_row=14)
 
             # Validar se o DataFrame foi carregado corretamente
             if df is None or df.empty:
                 raise ValueError("Arquivo Excel está vazio ou com formato inválido")
 
             # Limpar e preparar o DataFrame
+            # Remover colunas vazias ou sem nome
             df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
             df = df.dropna(axis=1, how="all")
+
+            # Remover linhas completamente vazias
+            df = df.dropna(how="all")
 
             # Validar se temos pelo menos uma coluna
             if df.empty or len(df.columns) == 0:
                 raise ValueError("Nenhuma coluna válida encontrada no arquivo")
 
             # Garantir que a primeira coluna seja o código
-            if "codigo" not in df.columns[0].lower():
+            if "codigo" not in str(df.columns[0]).lower():
                 df = df.rename(columns={df.columns[0]: "codigo"})
+
+            # Converter todos os valores para string e limpar
+            for col in df.columns:
+                df[col] = df[col].astype(str).str.strip()
 
             self.save_gestao(df)
             return df
@@ -165,12 +204,8 @@ class DataService:
             file_path: Caminho para o arquivo Excel
         """
         try:
-            # Tentar ler o arquivo com openpyxl primeiro
-            try:
-                df = pd.read_excel(file_path, engine="openpyxl")
-            except Exception as e:
-                print(f"Tentando formato antigo de Excel: {e}")
-                df = pd.read_excel(file_path, engine="xlrd", on_demand=True)
+            # Ler o arquivo Excel
+            df = self._read_excel_safe(file_path)
 
             # Validar DataFrame
             if df is None or df.empty:
@@ -199,8 +234,17 @@ class DataService:
                 "TELEFONE": "telefone",
             }
 
-            # Renomear colunas se necessário
-            df.columns = [column_mapping.get(col, col) for col in df.columns]
+            # Limpar nomes das colunas
+            df.columns = [str(col).strip() for col in df.columns]
+
+            # Tentar encontrar as colunas corretas mesmo com variações de nome
+            for original_col in df.columns:
+                # Tentar encontrar o mapeamento ignorando acentos e maiúsculas/minúsculas
+                normalized_col = original_col.lower().strip()
+                for key in column_mapping:
+                    if key.lower().strip() == normalized_col:
+                        df = df.rename(columns={original_col: column_mapping[key]})
+                        break
 
             # Validar colunas obrigatórias
             required_columns = ["codigo", "nome"]
@@ -208,25 +252,33 @@ class DataService:
 
             if missing_columns:
                 raise ValueError(
-                    f"Colunas obrigatórias não encontradas: {', '.join(missing_columns)}"
+                    f"Colunas obrigatórias não encontradas: {', '.join(missing_columns)}\n"
+                    f"Colunas encontradas: {', '.join(df.columns)}"
                 )
 
             casas = []
-            for _, row in df.iterrows():
+            for idx, row in df.iterrows():
                 try:
+                    # Limpar e converter valores
                     casa_dict = {
-                        "codigo": str(row.get("codigo", "")),
-                        "nome": str(row.get("nome", "")),
-                        "endereco": str(row.get("endereco", "")),
-                        "bairro": str(row.get("bairro", "")),
-                        "cidade": str(row.get("cidade", "")),
-                        "responsavel": str(row.get("responsavel", "")),
-                        "telefone": str(row.get("telefone", "")),
+                        "codigo": str(row.get("codigo", "")).strip(),
+                        "nome": str(row.get("nome", "")).strip(),
+                        "endereco": str(row.get("endereco", "")).strip(),
+                        "bairro": str(row.get("bairro", "")).strip(),
+                        "cidade": str(row.get("cidade", "")).strip(),
+                        "responsavel": str(row.get("responsavel", "")).strip(),
+                        "telefone": str(row.get("telefone", "")).strip(),
                     }
+
+                    # Validar dados obrigatórios
+                    if not casa_dict["codigo"] or not casa_dict["nome"]:
+                        print(f"Linha {idx + 2}: Código ou nome vazios")
+                        continue
+
                     casa = CasaOracao.from_dict(casa_dict)
                     casas.append(casa)
                 except Exception as e:
-                    print(f"Erro ao processar linha: {e}")
+                    print(f"Erro ao processar linha {idx + 2}: {e}")
                     continue
 
             if not casas:

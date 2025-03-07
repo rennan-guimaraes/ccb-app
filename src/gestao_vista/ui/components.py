@@ -13,7 +13,7 @@ def create_sidebar(
     on_clear_gestao: Callable,
     on_clear_casas: Callable,
     on_view_casas: Callable,
-) -> Tuple[ttk.Frame, Tuple[ttk.Frame, tk.Button]]:
+) -> Tuple[ttk.Frame, Tuple[ttk.Frame, ttk.Button]]:
     """
     Cria a sidebar com os controles principais.
 
@@ -40,24 +40,16 @@ def create_sidebar(
 
     # Botões principais
     buttons = [
-        ("📊 Carregar Gestão", on_load_gestao, "primary"),
-        ("🏠 Carregar Casas", on_load_casas, "primary"),
-        ("👁️ Ver Casas", on_view_casas, "secondary"),
-        ("🗑️ Limpar Gestão", on_clear_gestao, "error"),
-        ("🗑️ Limpar Casas", on_clear_casas, "error"),
+        ("📊 Carregar Gestão", on_load_gestao, "Primary.TButton"),
+        ("🏠 Carregar Casas", on_load_casas, "Primary.TButton"),
+        ("👁️ Ver Casas", on_view_casas, "Secondary.TButton"),
+        ("🗑️ Limpar Gestão", on_clear_gestao, "Error.TButton"),
+        ("🗑️ Limpar Casas", on_clear_casas, "Error.TButton"),
     ]
 
-    for text, command, variant in buttons:
-        style = get_button_style(variant)
-        btn = tk.Button(
-            content_frame,
-            text=text,
-            command=command,
-            font=DESIGN_SYSTEM["typography"]["button"],
-            bg=style["bg"],
-            fg=style["fg"],
-            relief="flat",
-            cursor="hand2",
+    for text, command, style in buttons:
+        btn = ttk.Button(
+            content_frame, text=text, command=command, style=style, cursor="hand2"
         )
         btn.pack(fill=tk.X, padx=10, pady=5)
 
@@ -67,15 +59,11 @@ def create_sidebar(
     export_container.pack_forget()
 
     # Botão de exportação
-    export_style = get_button_style("success")
-    export_button = tk.Button(
+    export_button = ttk.Button(
         export_container,
         text="📥 Exportar Faltantes",
         command=on_export,
-        font=DESIGN_SYSTEM["typography"]["button"],
-        bg=export_style["bg"],
-        fg=export_style["fg"],
-        relief="flat",
+        style="Success.TButton",
         cursor="hand2",
         state="disabled",
     )
@@ -127,13 +115,13 @@ def create_controls(
         controls_frame,
         textvariable=caracteristica_var,
         state="readonly",
-        font=DESIGN_SYSTEM["typography"]["body1"],
+        style="Custom.TCombobox",
     )
     combo.pack(side=tk.LEFT, padx=5)
     combo.set("Escolha uma característica...")
 
     # Label para feedback
-    feedback_label = ttk.Label(controls_frame, text="", style="TLabel")
+    feedback_label = ttk.Label(controls_frame, text="", style="Feedback.TLabel")
     feedback_label.pack(side=tk.LEFT, padx=5)
 
     def on_combo_selected(event):
@@ -144,13 +132,10 @@ def create_controls(
 
         if is_valid:
             feedback_label.configure(
-                text=f"✅ {selected} selecionada",
-                foreground=DESIGN_SYSTEM["colors"]["success"],
+                text=f"✅ {selected} selecionada", style="Success.TLabel"
             )
         else:
-            feedback_label.configure(
-                text="", foreground=DESIGN_SYSTEM["colors"]["text"]["primary"]
-            )
+            feedback_label.configure(text="", style="Feedback.TLabel")
 
     combo.bind("<<ComboboxSelected>>", on_combo_selected)
 
