@@ -1,9 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from styles import setup_styles
-
-# Obter o design system
-DESIGN_SYSTEM = setup_styles()
+from styles import DESIGN_SYSTEM
 
 
 def darken_color(hex_color, factor=0.8):
@@ -36,25 +33,32 @@ def create_sidebar(
     clear_casas_callback,
     view_casas_callback,
 ):
-    # Frame externo para borda
+    # Frame externo para borda com gradiente
     outer_sidebar = tk.Frame(
         root,
-        bg=DESIGN_SYSTEM["colors"]["border"],  # Usar a cor de borda do design system
+        bg=DESIGN_SYSTEM["colors"]["border"],
         highlightthickness=0,
     )
     outer_sidebar.grid(row=0, column=1, sticky=(tk.N, tk.S, tk.E, tk.W), padx=(1, 0))
     outer_sidebar.grid_columnconfigure(0, weight=1)
 
-    # Frame interno da sidebar
+    # Frame interno da sidebar com gradiente
     sidebar = ttk.Frame(outer_sidebar, style="Sidebar.TFrame")
     sidebar.grid(row=0, column=0, sticky=(tk.N, tk.S, tk.E, tk.W), padx=1, pady=1)
     sidebar.grid_columnconfigure(0, weight=1)
 
-    # Título da Sidebar com ícone
+    # Título da Sidebar com ícone e estilo moderno
+    title_frame = ttk.Frame(sidebar, style="Sidebar.TFrame")
+    title_frame.grid(row=0, column=0, pady=(20, 30), sticky="ew")
+    title_frame.grid_columnconfigure(0, weight=1)
+
     sidebar_title = ttk.Label(
-        sidebar, text="🎯 Menu Principal", style="SubHeader.TLabel", anchor="center"
+        title_frame,
+        text="🎯 Menu Principal",
+        style="MenuHeader.TLabel",
+        anchor="center",
     )
-    sidebar_title.grid(row=0, column=0, pady=(0, 30), sticky="ew")
+    sidebar_title.grid(row=0, column=0, sticky="ew")
 
     # Botões com ícones e descrições
     buttons_data = [
@@ -63,7 +67,7 @@ def create_sidebar(
             "text": "Carregar\nGestão à Vista",
             "description": "Importar dados do arquivo de gestão",
             "command": load_gestao_callback,
-            "color": "#4CAF50",  # primary mais vibrante
+            "style": "Primary.TButton",
             "row": 1,
             "enabled": True,
         },
@@ -72,7 +76,7 @@ def create_sidebar(
             "text": "Limpar\nGestão à Vista",
             "description": "Limpar dados do arquivo de gestão",
             "command": clear_gestao_callback,
-            "color": "#f44336",  # vermelho
+            "style": "Danger.TButton",
             "row": 2,
             "enabled": True,
         },
@@ -81,7 +85,7 @@ def create_sidebar(
             "text": "Carregar\nCasas de Oração",
             "description": "Importar lista de casas",
             "command": load_casas_callback,
-            "color": "#4CAF50",  # primary mais vibrante
+            "style": "Info.TButton",
             "row": 3,
             "enabled": True,
         },
@@ -90,7 +94,7 @@ def create_sidebar(
             "text": "Limpar\nCasas de Oração",
             "description": "Limpar dados das casas",
             "command": clear_casas_callback,
-            "color": "#f44336",  # vermelho
+            "style": "Danger.TButton",
             "row": 4,
             "enabled": True,
         },
@@ -99,7 +103,7 @@ def create_sidebar(
             "text": "Visualizar\nCasas de Oração",
             "description": "Ver e editar casas cadastradas",
             "command": view_casas_callback,
-            "color": "#2196F3",  # azul
+            "style": "Purple.TButton",
             "row": 5,
             "enabled": True,
         },
@@ -107,95 +111,42 @@ def create_sidebar(
 
     # Container para o botão de exportar
     export_container = ttk.Frame(sidebar, style="Sidebar.TFrame")
-    export_container.grid(row=6, column=0, pady=(0, 20), sticky="ew")
+    export_container.grid(row=6, column=0, pady=(20, 20), sticky="ew")
     export_container.grid_columnconfigure(0, weight=1)
-    export_container.grid_remove()  # Inicialmente escondido
+    export_container.grid_remove()
 
-    # Botão de exportar
-    export_btn = tk.Button(
+    # Botão de exportar com estilo moderno
+    export_btn = ttk.Button(
         export_container,
-        text="📥\nExportar\nCasas Faltantes",
+        text="📥 Exportar\nCasas Faltantes",
         command=export_callback,
-        font=("Helvetica", 16, "bold"),
-        bg="#2196F3",  # secondary mais vibrante
-        fg="white",
-        height=4,
-        width=20,
-        relief="flat",
-        borderwidth=0,
-        activebackground=darken_color("#2196F3", 0.7),
-        activeforeground="white",
+        style="Warning.TButton",
         cursor="hand2",
     )
+    export_btn.grid(row=0, column=0, sticky="ew", padx=10)
 
-    # Efeitos de hover para o botão de exportar
-    def on_enter(e):
-        export_btn.configure(bg=lighten_color("#2196F3", 1.1))
-        export_btn.configure(relief="solid")
-
-    def on_leave(e):
-        export_btn.configure(bg="#2196F3")
-        export_btn.configure(relief="flat")
-
-    export_btn.bind("<Enter>", on_enter)
-    export_btn.bind("<Leave>", on_leave)
-    export_btn.grid(row=0, column=0, sticky="ew")
-
-    # Descrição do botão de exportar
-    export_desc = ttk.Label(
-        export_container,
-        text="Gerar relatório de pendências",
-        style="Caption.TLabel",
-        anchor="center",
-    )
-    export_desc.grid(row=1, column=0, pady=(5, 0), sticky="ew")
-
-    # Criar os outros botões
+    # Criar os outros botões com estilo moderno
     for btn_data in buttons_data:
         # Container para cada botão e sua descrição
         btn_container = ttk.Frame(sidebar, style="Sidebar.TFrame")
-        btn_container.grid(row=btn_data["row"], column=0, pady=(0, 20), sticky="ew")
+        btn_container.grid(row=btn_data["row"], column=0, pady=(0, 15), sticky="ew")
         btn_container.grid_columnconfigure(0, weight=1)
 
-        # Calcular cores para diferentes estados
-        darker_color = darken_color(btn_data["color"], 0.7)
-        hover_color = lighten_color(btn_data["color"], 1.1)
-
         # Botão principal com efeito de elevação
-        btn = tk.Button(
+        btn = ttk.Button(
             btn_container,
-            text=f"{btn_data['icon']}\n{btn_data['text']}",
+            text=f"{btn_data['icon']} {btn_data['text']}",
             command=btn_data["command"],
-            font=("Helvetica", 16, "bold"),
-            bg=btn_data["color"],
-            fg="white",
-            height=4,
-            width=20,
-            relief="flat",
-            borderwidth=0,
-            activebackground=darker_color,
-            activeforeground="white",
+            style=btn_data["style"],
             cursor="hand2",
         )
-
-        # Efeitos de hover e clique
-        def on_enter(e, b=btn, c=hover_color):
-            b.configure(bg=c)
-            b.configure(relief="solid")
-
-        def on_leave(e, b=btn, c=btn_data["color"]):
-            b.configure(bg=c)
-            b.configure(relief="flat")
-
-        btn.bind("<Enter>", on_enter)
-        btn.bind("<Leave>", on_leave)
-        btn.grid(row=0, column=0, sticky="ew")
+        btn.grid(row=0, column=0, sticky="ew", padx=10)
 
         # Descrição do botão com estilo caption
         desc_label = ttk.Label(
             btn_container,
             text=btn_data["description"],
-            style="Caption.TLabel",
+            style="MenuCaption.TLabel",
             anchor="center",
         )
         desc_label.grid(row=1, column=0, pady=(5, 0), sticky="ew")

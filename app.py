@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 
-from styles import setup_styles
+from styles import DESIGN_SYSTEM, setup_styles
 from components import create_sidebar, create_main_content, create_controls
 from data_manager import DataManager
 
@@ -15,10 +15,14 @@ class GestaoVistaApp:
         self.root = root
 
         # Configurar estilo e obter sistema de design primeiro
-        self.design_system = setup_styles()
+        setup_styles()
+        self.design_system = DESIGN_SYSTEM
 
         # Depois configurar a janela que usa o design system
         self.setup_window()
+
+        # Configurar tema escuro para o matplotlib
+        plt.style.use("dark_background")
 
         self.df_gestao = None
         self.df_casas = None
@@ -38,9 +42,7 @@ class GestaoVistaApp:
 
         if self.df_gestao is not None:
             self.caracteristicas = self.df_gestao.columns[1:].tolist()
-            self.coluna_codigo = self.df_gestao.columns[
-                0
-            ]  # Definir coluna_codigo se tiver dados
+            self.coluna_codigo = self.df_gestao.columns[0]
 
         self.setup_ui()
 
@@ -394,7 +396,6 @@ class GestaoVistaApp:
             widget.destroy()
 
         # Configurar estilo do gráfico
-        plt.style.use("dark_background")
         fig, ax = plt.subplots(
             figsize=(12, 7), facecolor=self.design_system["colors"]["background"]
         )
