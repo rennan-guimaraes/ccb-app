@@ -29,8 +29,14 @@ def create_sidebar(
     sidebar = ttk.Frame(root, style="Card.TFrame")
     sidebar.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
+    # Frame para conteúdo da sidebar
+    content_frame = ttk.Frame(sidebar, style="Card.TFrame")
+    content_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
     # Título da sidebar
-    ttk.Label(sidebar, text="Controles", style="Header.TLabel").pack(pady=10, padx=10)
+    ttk.Label(content_frame, text="Controles", style="Header.TLabel").pack(
+        pady=10, padx=10
+    )
 
     # Botões principais
     buttons = [
@@ -44,7 +50,7 @@ def create_sidebar(
     for text, command, variant in buttons:
         style = get_button_style(variant)
         btn = tk.Button(
-            sidebar,
+            content_frame,
             text=text,
             command=command,
             font=DESIGN_SYSTEM["typography"]["button"],
@@ -56,7 +62,7 @@ def create_sidebar(
         btn.pack(fill=tk.X, padx=10, pady=5)
 
     # Container para exportação (inicialmente escondido)
-    export_container = ttk.Frame(sidebar, style="Card.TFrame")
+    export_container = ttk.Frame(content_frame, style="Card.TFrame")
     export_container.pack(fill=tk.X, padx=10, pady=5)
     export_container.pack_forget()
 

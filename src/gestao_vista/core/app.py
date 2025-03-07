@@ -71,9 +71,14 @@ class GestaoVistaApp:
         self.df_gestao = self.data_service.load_gestao()
         self.casas = self.data_service.load_casas()
 
-        if self.df_gestao is not None:
+        if self.df_gestao is not None and not self.df_gestao.empty:
             self.caracteristicas = self.df_gestao.columns[1:].tolist()
             self.coluna_codigo = self.df_gestao.columns[0]
+        else:
+            self.caracteristicas = []
+            self.coluna_codigo = None
+            # Criar DataFrame vazio com estrutura básica
+            self.df_gestao = pd.DataFrame(columns=["codigo"])
 
     def setup_ui(self):
         """Configura a interface do usuário"""
@@ -110,15 +115,26 @@ class GestaoVistaApp:
         """Callback para quando uma característica é selecionada"""
         if self.export_container and self.export_button:
             if is_valid:
-                self.export_container.grid()
+                self.export_container.pack(fill=tk.X, padx=10, pady=5)
                 self.export_button.configure(state="normal")
             else:
-                self.export_container.grid_remove()
+                self.export_container.pack_forget()
                 self.export_button.configure(state="disabled")
 
     def plot_graph(self):
         """Plota o gráfico com os dados atuais"""
-        if self.df_gestao is None:
+        if self.df_gestao is None or self.df_gestao.empty or not self.caracteristicas:
+            # Limpar frame do gráfico
+            for widget in self.graph_frame.winfo_children():
+                widget.destroy()
+
+            # Mostrar mensagem quando não há dados
+            ttk.Label(
+                self.graph_frame,
+                text="Nenhum dado disponível.\nImporte um arquivo de Gestão à Vista para visualizar o gráfico.",
+                style="SubHeader.TLabel",
+                justify=tk.CENTER,
+            ).pack(expand=True)
             return
 
         # Limpar frame do gráfico
