@@ -14,6 +14,9 @@ def main():
     root.title("Gestão Vista")
     root.geometry("800x600")
 
+    # Configurar tema escuro
+    root.configure(bg=DESIGN_SYSTEM["colors"]["background"]["default"])
+
     # Configurar estilos TTK
     setup_styles(root)
 
@@ -29,9 +32,9 @@ def main():
     # Criar variáveis de controle
     caracteristica_var = tk.StringVar()
 
-    # Criar frame principal
-    main_frame = ttk.Frame(root)
-    main_frame.grid(row=0, column=0, sticky="nsew")
+    # Criar frame principal com tema escuro
+    main_frame = ttk.Frame(root, style="Card.TFrame")
+    main_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
     # Criar controles
     def on_caracteristica_selected(is_valid: bool):

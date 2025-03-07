@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Callable
 
 from ..models.casa_oracao import CasaOracao
 from ..services.data_service import DataService
@@ -59,7 +59,7 @@ class GestaoVistaApp:
         setup_styles()
         self.root.title("Gestão à Vista - Casas de Oração")
         self.root.geometry("1400x900")
-        self.root.configure(bg=DESIGN_SYSTEM["colors"]["background"])
+        self.root.configure(bg=DESIGN_SYSTEM["colors"]["background"]["default"])
 
         # Configurar grid principal
         self.root.grid_rowconfigure(0, weight=1)
@@ -143,9 +143,9 @@ class GestaoVistaApp:
 
         # Configurar gráfico
         fig, ax = plt.subplots(
-            figsize=(12, 7), facecolor=DESIGN_SYSTEM["colors"]["background"]
+            figsize=(12, 7), facecolor=DESIGN_SYSTEM["colors"]["background"]["default"]
         )
-        ax.set_facecolor(DESIGN_SYSTEM["colors"]["surface"])
+        ax.set_facecolor(DESIGN_SYSTEM["colors"]["background"]["paper"])
 
         # Calcular dados
         contagens = []
@@ -302,17 +302,11 @@ class GestaoVistaApp:
         action_frame.pack(fill=tk.X, padx=5, pady=(0, 10))
 
         # Botão Adicionar
-        add_btn = tk.Button(
+        add_btn = create_button(
             action_frame,
-            text="➕ Adicionar Casa",
-            command=lambda: self.add_edit_casa(dialog),
-            font=DESIGN_SYSTEM["typography"]["button"],
-            bg=DESIGN_SYSTEM["colors"]["success"],
-            fg=DESIGN_SYSTEM["colors"]["text"]["primary"],
-            relief="flat",
-            cursor="hand2",
-            padx=15,
-            pady=5,
+            "➕ Adicionar Casa",
+            lambda: self.add_edit_casa(dialog),
+            "success",
         )
         add_btn.pack(side=tk.LEFT, padx=5)
 
@@ -395,6 +389,50 @@ class GestaoVistaApp:
             ),
         )
 
+    def create_button(
+        self, parent: tk.Widget, text: str, command: Callable, variant: str
+    ) -> tk.Button:
+        """Cria um botão estilizado"""
+        colors = {
+            "primary": DESIGN_SYSTEM["colors"]["primary"],
+            "secondary": DESIGN_SYSTEM["colors"]["secondary"],
+            "error": DESIGN_SYSTEM["colors"]["error"],
+            "success": DESIGN_SYSTEM["colors"]["success"],
+        }
+
+        bg_color = colors[variant]
+        fg_color = DESIGN_SYSTEM["colors"]["text"]["primary"]
+        font = DESIGN_SYSTEM["typography"]["button"]
+
+        btn = tk.Button(
+            parent,
+            text=text,
+            command=command,
+            font=font,
+            fg=fg_color,
+            bg=bg_color,
+            activebackground=bg_color,
+            activeforeground=fg_color,
+            relief="flat",
+            cursor="hand2",
+            pady=8,
+            bd=0,
+        )
+
+        # Bind hover events
+        def on_enter(e):
+            btn["bg"] = bg_color
+            btn["fg"] = fg_color
+
+        def on_leave(e):
+            btn["bg"] = bg_color
+            btn["fg"] = fg_color
+
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
+
+        return btn
+
     def add_edit_casa(self, parent: tk.Toplevel, casa: Optional[CasaOracao] = None):
         """
         Abre janela para adicionar ou editar casa de oração.
@@ -434,31 +472,16 @@ class GestaoVistaApp:
         button_frame.pack(fill=tk.X, padx=10, pady=20)
 
         # Botões
-        save_btn = tk.Button(
+        save_btn = self.create_button(
             button_frame,
-            text="💾 Salvar",
-            command=lambda: self.save_casa(dialog, entries, casa),
-            font=DESIGN_SYSTEM["typography"]["button"],
-            bg=DESIGN_SYSTEM["colors"]["success"],
-            fg=DESIGN_SYSTEM["colors"]["text"]["primary"],
-            relief="flat",
-            cursor="hand2",
-            padx=20,
-            pady=5,
+            "💾 Salvar",
+            lambda: self.save_casa(dialog, entries, casa),
+            "success",
         )
         save_btn.pack(side=tk.RIGHT, padx=5)
 
-        cancel_btn = tk.Button(
-            button_frame,
-            text="❌ Cancelar",
-            command=dialog.destroy,
-            font=DESIGN_SYSTEM["typography"]["button"],
-            bg=DESIGN_SYSTEM["colors"]["error"],
-            fg=DESIGN_SYSTEM["colors"]["text"]["primary"],
-            relief="flat",
-            cursor="hand2",
-            padx=20,
-            pady=5,
+        cancel_btn = self.create_button(
+            button_frame, "❌ Cancelar", dialog.destroy, "error"
         )
         cancel_btn.pack(side=tk.RIGHT, padx=5)
 
