@@ -3,30 +3,33 @@ from typing import Dict, Any
 
 DESIGN_SYSTEM: Dict[str, Any] = {
     "colors": {
-        "primary": "#1976D2",
-        "secondary": "#424242",
+        "primary": "#3B82F6",  # Azul mais vibrante
+        "secondary": "#6366F1",  # Indigo
         "background": {
-            "default": "#121212",  # Fundo escuro principal
-            "paper": "#1E1E1E",  # Superfícies e cards
+            "default": "#0F172A",  # Azul escuro profundo
+            "paper": "#1E293B",  # Azul escuro mais claro
+            "card": "#1E293B",  # Fundo dos cards
+            "button": "#334155",  # Fundo dos botões (mais escuro)
+            "hover": "#475569",  # Cor de hover
         },
-        "error": "#CF6679",
-        "success": "#4CAF50",
-        "warning": "#FB8C00",
-        "border": "#323232",
+        "error": "#EF4444",  # Vermelho
+        "success": "#10B981",  # Verde esmeralda
+        "warning": "#F59E0B",  # Âmbar
+        "border": "#475569",  # Cinza azulado
         "text": {
-            "primary": "#FFFFFF",  # Texto principal branco
-            "secondary": "#B3B3B3",  # Texto secundário cinza claro
-            "disabled": "#666666",  # Texto desabilitado
+            "primary": "#F8FAFC",  # Branco com tom azulado
+            "secondary": "#94A3B8",  # Cinza azulado claro
+            "disabled": "#64748B",  # Cinza azulado médio
         },
     },
     "spacing": {"xs": 4, "sm": 8, "md": 16, "lg": 24, "xl": 32},
     "typography": {
-        "h1": ("Helvetica", 24, "bold"),
-        "h2": ("Helvetica", 20, "bold"),
-        "h3": ("Helvetica", 18, "bold"),
-        "body1": ("Helvetica", 14, "normal"),
-        "body2": ("Helvetica", 12, "normal"),
-        "button": ("Helvetica", 14, "bold"),
+        "h1": ("Inter", 24, "bold"),
+        "h2": ("Inter", 20, "bold"),
+        "h3": ("Inter", 18, "bold"),
+        "body1": ("Inter", 14, "normal"),
+        "body2": ("Inter", 12, "normal"),
+        "button": ("Inter", 14, "bold"),
     },
     "border_radius": {"sm": 4, "md": 8, "lg": 12},
 }
@@ -182,23 +185,27 @@ def get_button_style(variant: str = "primary") -> Dict[str, Any]:
     Args:
         variant: Tipo do botão ('primary', 'secondary', 'error', 'success')
     """
-    styles = {
+    colors = {
         "primary": {
-            "bg": DESIGN_SYSTEM["colors"]["primary"],
-            "fg": DESIGN_SYSTEM["colors"]["text"]["primary"],
+            "default": DESIGN_SYSTEM["colors"]["primary"],
+            "hover": "#2563EB",  # Azul mais escuro
+            "text": "#FFFFFF",
         },
         "secondary": {
-            "bg": DESIGN_SYSTEM["colors"]["secondary"],
-            "fg": DESIGN_SYSTEM["colors"]["text"]["primary"],
+            "default": DESIGN_SYSTEM["colors"]["secondary"],
+            "hover": "#4F46E5",  # Indigo mais escuro
+            "text": "#FFFFFF",
         },
         "error": {
-            "bg": DESIGN_SYSTEM["colors"]["error"],
-            "fg": DESIGN_SYSTEM["colors"]["text"]["primary"],
+            "default": DESIGN_SYSTEM["colors"]["error"],
+            "hover": "#DC2626",  # Vermelho mais escuro
+            "text": "#FFFFFF",
         },
         "success": {
-            "bg": DESIGN_SYSTEM["colors"]["success"],
-            "fg": DESIGN_SYSTEM["colors"]["text"]["primary"],
+            "default": DESIGN_SYSTEM["colors"]["success"],
+            "hover": "#059669",  # Verde mais escuro
+            "text": "#FFFFFF",
         },
     }
 
-    return styles.get(variant, styles["primary"])
+    return colors.get(variant, colors["primary"])

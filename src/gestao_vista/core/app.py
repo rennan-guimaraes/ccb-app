@@ -15,6 +15,7 @@ from ..ui.components import (
     create_controls,
     create_dialog_window,
     create_form_field,
+    create_button,
 )
 
 
@@ -318,28 +319,42 @@ class GestaoVistaApp:
         columns = [
             "codigo",
             "nome",
+            "tipo_imovel",
             "endereco",
-            "bairro",
-            "cidade",
-            "responsavel",
-            "telefone",
+            "observacoes",
+            "status",
         ]
-        tree = ttk.Treeview(table_frame, columns=columns, show="headings")
+        tree = ttk.Treeview(
+            table_frame, columns=columns, show="headings", selectmode="browse"
+        )
 
-        # Configurar colunas
+        # Configurar colunas e cabeçalhos
         headers = {
             "codigo": "Código",
             "nome": "Nome",
+            "tipo_imovel": "Tipo",
             "endereco": "Endereço",
-            "bairro": "Bairro",
-            "cidade": "Cidade",
-            "responsavel": "Responsável",
-            "telefone": "Telefone",
+            "observacoes": "Observações",
+            "status": "Status",
+        }
+
+        # Configurar cada coluna individualmente
+        column_widths = {
+            "codigo": 100,
+            "nome": 200,
+            "tipo_imovel": 150,
+            "endereco": 250,
+            "observacoes": 200,
+            "status": 100,
         }
 
         for col in columns:
             tree.heading(col, text=headers[col])
-            tree.column(col, width=120)
+            tree.column(col, width=column_widths[col], stretch=True)
+
+        # Limpar dados existentes
+        for item in tree.get_children():
+            tree.delete(item)
 
         # Adicionar scrollbars
         y_scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=tree.yview)
@@ -354,7 +369,10 @@ class GestaoVistaApp:
 
         # Preencher dados
         for casa in self.casas:
-            values = [getattr(casa, col) or "" for col in columns]
+            values = []
+            for col in columns:
+                value = getattr(casa, col, "")
+                values.append(value if value is not None else "")
             tree.insert("", tk.END, values=values)
 
         # Adicionar menu de contexto
@@ -389,50 +407,6 @@ class GestaoVistaApp:
             ),
         )
 
-    def create_button(
-        self, parent: tk.Widget, text: str, command: Callable, variant: str
-    ) -> tk.Button:
-        """Cria um botão estilizado"""
-        colors = {
-            "primary": DESIGN_SYSTEM["colors"]["primary"],
-            "secondary": DESIGN_SYSTEM["colors"]["secondary"],
-            "error": DESIGN_SYSTEM["colors"]["error"],
-            "success": DESIGN_SYSTEM["colors"]["success"],
-        }
-
-        bg_color = colors[variant]
-        fg_color = DESIGN_SYSTEM["colors"]["text"]["primary"]
-        font = DESIGN_SYSTEM["typography"]["button"]
-
-        btn = tk.Button(
-            parent,
-            text=text,
-            command=command,
-            font=font,
-            fg=fg_color,
-            bg=bg_color,
-            activebackground=bg_color,
-            activeforeground=fg_color,
-            relief="flat",
-            cursor="hand2",
-            pady=8,
-            bd=0,
-        )
-
-        # Bind hover events
-        def on_enter(e):
-            btn["bg"] = bg_color
-            btn["fg"] = fg_color
-
-        def on_leave(e):
-            btn["bg"] = bg_color
-            btn["fg"] = fg_color
-
-        btn.bind("<Enter>", on_enter)
-        btn.bind("<Leave>", on_leave)
-
-        return btn
-
     def add_edit_casa(self, parent: tk.Toplevel, casa: Optional[CasaOracao] = None):
         """
         Abre janela para adicionar ou editar casa de oração.
@@ -453,11 +427,10 @@ class GestaoVistaApp:
         fields = {
             "codigo": ("Código", True),
             "nome": ("Nome", True),
+            "tipo_imovel": ("Tipo", False),
             "endereco": ("Endereço", False),
-            "bairro": ("Bairro", False),
-            "cidade": ("Cidade", False),
-            "responsavel": ("Responsável", False),
-            "telefone": ("Telefone", False),
+            "observacoes": ("Observações", False),
+            "status": ("Status", False),
         }
 
         entries = {}
@@ -472,7 +445,7 @@ class GestaoVistaApp:
         button_frame.pack(fill=tk.X, padx=10, pady=20)
 
         # Botões
-        save_btn = self.create_button(
+        save_btn = create_button(
             button_frame,
             "💾 Salvar",
             lambda: self.save_casa(dialog, entries, casa),
@@ -480,9 +453,7 @@ class GestaoVistaApp:
         )
         save_btn.pack(side=tk.RIGHT, padx=5)
 
-        cancel_btn = self.create_button(
-            button_frame, "❌ Cancelar", dialog.destroy, "error"
-        )
+        cancel_btn = create_button(button_frame, "❌ Cancelar", dialog.destroy, "error")
         cancel_btn.pack(side=tk.RIGHT, padx=5)
 
     def save_casa(

@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from typing import Tuple, Callable, Optional, List
+from tkmacosx import Button as MacButton
 
 from ..utils.design_system import DESIGN_SYSTEM, get_button_style
 
@@ -27,6 +28,63 @@ def create_label(parent: tk.Widget, text: str, variant: str = "body1") -> tk.Lab
         bg=bg_color,
         anchor="w",
     )
+
+
+def create_button(
+    parent: ttk.Frame, text: str, command: Callable, variant: str
+) -> MacButton:
+    """Cria um botão estilizado usando tkmacosx.Button"""
+    style = get_button_style(variant)
+    bg_color = style["default"]
+    hover_color = style["hover"]
+    fg_color = style["text"]
+    font = DESIGN_SYSTEM["typography"]["button"]
+
+    btn = MacButton(
+        parent,
+        text=text,
+        command=command,
+        font=font,
+        fg=fg_color,
+        bg=bg_color,
+        activebackground=hover_color,
+        activeforeground=fg_color,
+        disabledforeground=DESIGN_SYSTEM["colors"]["text"]["disabled"],
+        borderless=1,
+        focuscolor="",
+        height=35,
+        padx=12,
+        overrelief="flat",
+        borderwidth=0,
+        highlightthickness=0,
+        overbackground=hover_color,
+    )
+    btn.pack(fill=tk.X, padx=10, pady=5)
+
+    def on_disable():
+        btn.configure(
+            bg=DESIGN_SYSTEM["colors"]["background"]["button"],
+            fg=DESIGN_SYSTEM["colors"]["text"]["disabled"],
+        )
+
+    # Configurar estado inicial
+    if str(btn["state"]) == "disabled":
+        on_disable()
+
+    # Sobrescrever o método configure para manter as cores corretas
+    original_configure = btn.configure
+
+    def new_configure(**kwargs):
+        if "state" in kwargs:
+            if kwargs["state"] == "disabled":
+                on_disable()
+            elif kwargs["state"] == "normal":
+                btn.configure(bg=bg_color, fg=fg_color)
+        original_configure(**kwargs)
+
+    btn.configure = new_configure
+
+    return btn
 
 
 def create_sidebar(
@@ -71,53 +129,8 @@ def create_sidebar(
         ("🗑️ Limpar Casas", on_clear_casas, "error"),
     ]
 
-    def create_button(
-        parent: ttk.Frame, text: str, command: Callable, variant: str
-    ) -> tk.Button:
-        """Cria um botão estilizado"""
-        colors = {
-            "primary": DESIGN_SYSTEM["colors"]["primary"],
-            "secondary": DESIGN_SYSTEM["colors"]["secondary"],
-            "error": DESIGN_SYSTEM["colors"]["error"],
-            "success": DESIGN_SYSTEM["colors"]["success"],
-        }
-
-        bg_color = colors[variant]
-        fg_color = DESIGN_SYSTEM["colors"]["text"]["primary"]
-        font = DESIGN_SYSTEM["typography"]["button"]
-
-        btn = tk.Button(
-            parent,
-            text=text,
-            command=command,
-            font=font,
-            fg=fg_color,
-            bg=bg_color,
-            activebackground=bg_color,
-            activeforeground=fg_color,
-            relief="flat",
-            cursor="hand2",
-            pady=8,
-            bd=0,
-        )
-
-        # Bind hover events
-        def on_enter(e):
-            btn["bg"] = bg_color
-            btn["fg"] = fg_color
-
-        def on_leave(e):
-            btn["bg"] = bg_color
-            btn["fg"] = fg_color
-
-        btn.bind("<Enter>", on_enter)
-        btn.bind("<Leave>", on_leave)
-
-        return btn
-
     for text, command, style in buttons:
         btn = create_button(content_frame, text, command, style)
-        btn.pack(fill=tk.X, padx=10, pady=5)
 
     # Container para exportação (inicialmente escondido)
     export_container = ttk.Frame(content_frame, style="Card.TFrame")
@@ -128,7 +141,6 @@ def create_sidebar(
     export_button = create_button(
         export_container, "📥 Exportar Faltantes", on_export, "success"
     )
-    export_button.pack(fill=tk.X)
     export_button.configure(state="disabled")
 
     return sidebar, (export_container, export_button)
@@ -174,6 +186,9 @@ def create_combobox(
         fieldbackground=DESIGN_SYSTEM["colors"]["background"]["paper"],
         foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
         arrowcolor=DESIGN_SYSTEM["colors"]["primary"],
+        borderwidth=2,
+        relief="solid",
+        padding=5,
     )
 
     style.map(
@@ -181,10 +196,16 @@ def create_combobox(
         fieldbackground=[
             ("readonly", DESIGN_SYSTEM["colors"]["background"]["paper"]),
             ("disabled", DESIGN_SYSTEM["colors"]["background"]["default"]),
+            ("active", DESIGN_SYSTEM["colors"]["primary"]),
         ],
         foreground=[
             ("readonly", DESIGN_SYSTEM["colors"]["text"]["primary"]),
             ("disabled", DESIGN_SYSTEM["colors"]["text"]["disabled"]),
+            ("active", DESIGN_SYSTEM["colors"]["text"]["primary"]),
+        ],
+        bordercolor=[
+            ("focus", DESIGN_SYSTEM["colors"]["primary"]),
+            ("active", DESIGN_SYSTEM["colors"]["primary"]),
         ],
     )
 

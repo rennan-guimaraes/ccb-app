@@ -204,47 +204,69 @@ class DataService:
             file_path: Caminho para o arquivo Excel
         """
         try:
-            # Ler o arquivo Excel
+            # Ler o arquivo Excel, ignorando a primeira linha
             df = self._read_excel_safe(file_path)
+
+            # Remover a primeira linha (cabeçalho)
+            df = df.iloc[1:]
 
             # Validar DataFrame
             if df is None or df.empty:
                 raise ValueError("Arquivo Excel está vazio ou com formato inválido")
 
-            # Mapear colunas para o formato esperado
-            column_mapping = {
-                "Código": "codigo",
-                "CÓDIGO": "codigo",
-                "CODIGO": "codigo",
-                "Nome": "nome",
-                "NOME": "nome",
-                "Endereço": "endereco",
-                "ENDEREÇO": "endereco",
-                "ENDERECO": "endereco",
-                "Endereco": "endereco",
-                "Bairro": "bairro",
-                "BAIRRO": "bairro",
-                "Cidade": "cidade",
-                "CIDADE": "cidade",
-                "Responsável": "responsavel",
-                "RESPONSÁVEL": "responsavel",
-                "Responsavel": "responsavel",
-                "RESPONSAVEL": "responsavel",
-                "Telefone": "telefone",
-                "TELEFONE": "telefone",
-            }
+            # Converter todas as colunas para string
+            df.columns = df.columns.astype(str)
 
-            # Limpar nomes das colunas
-            df.columns = [str(col).strip() for col in df.columns]
+            # Se as colunas são números (0, 1, 2, etc), mapear para os nomes corretos
+            if all(col.isdigit() for col in df.columns):
+                # Mapear colunas numéricas para nomes
+                numeric_mapping = {
+                    "0": "codigo",
+                    "1": "nome",
+                    "2": "casa_oracao",  # Ignorar esta coluna
+                    "3": "tipo_imovel",
+                    "4": "endereco",
+                    "5": "observacoes",
+                    "6": "status",
+                }
+                df = df.rename(columns=numeric_mapping)
+            else:
+                # Mapear colunas para o formato esperado
+                column_mapping = {
+                    "Código": "codigo",
+                    "CÓDIGO": "codigo",
+                    "CODIGO": "codigo",
+                    "codigo": "codigo",
+                    "Nome": "nome",
+                    "NOME": "nome",
+                    "nome": "nome",
+                    "Tipo Imóvel": "tipo_imovel",
+                    "TIPO IMÓVEL": "tipo_imovel",
+                    "tipo_imovel": "tipo_imovel",
+                    "Endereço": "endereco",
+                    "ENDEREÇO": "endereco",
+                    "ENDERECO": "endereco",
+                    "Endereco": "endereco",
+                    "endereco": "endereco",
+                    "Observações": "observacoes",
+                    "OBSERVAÇÕES": "observacoes",
+                    "observacoes": "observacoes",
+                    "Status": "status",
+                    "STATUS": "status",
+                    "status": "status",
+                }
 
-            # Tentar encontrar as colunas corretas mesmo com variações de nome
-            for original_col in df.columns:
-                # Tentar encontrar o mapeamento ignorando acentos e maiúsculas/minúsculas
-                normalized_col = original_col.lower().strip()
-                for key in column_mapping:
-                    if key.lower().strip() == normalized_col:
-                        df = df.rename(columns={original_col: column_mapping[key]})
-                        break
+                # Limpar nomes das colunas
+                df.columns = [str(col).strip() for col in df.columns]
+
+                # Tentar encontrar as colunas corretas mesmo com variações de nome
+                for original_col in df.columns:
+                    # Tentar encontrar o mapeamento ignorando acentos e maiúsculas/minúsculas
+                    normalized_col = original_col.lower().strip()
+                    for key in column_mapping:
+                        if key.lower().strip() == normalized_col:
+                            df = df.rename(columns={original_col: column_mapping[key]})
+                            break
 
             # Validar colunas obrigatórias
             required_columns = ["codigo", "nome"]
@@ -263,11 +285,10 @@ class DataService:
                     casa_dict = {
                         "codigo": str(row.get("codigo", "")).strip(),
                         "nome": str(row.get("nome", "")).strip(),
+                        "tipo_imovel": str(row.get("tipo_imovel", "")).strip(),
                         "endereco": str(row.get("endereco", "")).strip(),
-                        "bairro": str(row.get("bairro", "")).strip(),
-                        "cidade": str(row.get("cidade", "")).strip(),
-                        "responsavel": str(row.get("responsavel", "")).strip(),
-                        "telefone": str(row.get("telefone", "")).strip(),
+                        "observacoes": str(row.get("observacoes", "")).strip(),
+                        "status": str(row.get("status", "")).strip(),
                     }
 
                     # Validar dados obrigatórios

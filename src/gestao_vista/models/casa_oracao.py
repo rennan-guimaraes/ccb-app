@@ -6,22 +6,20 @@ from typing import Optional
 class CasaOracao:
     codigo: str
     nome: str
+    tipo_imovel: Optional[str] = None
     endereco: Optional[str] = None
-    bairro: Optional[str] = None
-    cidade: Optional[str] = None
-    responsavel: Optional[str] = None
-    telefone: Optional[str] = None
+    observacoes: Optional[str] = None
+    status: Optional[str] = None
 
     @property
     def info_completa(self) -> str:
         """Retorna uma string formatada com todas as informações da casa."""
         return (
             f"Casa de Oração {self.codigo} - {self.nome}\n"
+            f"Tipo: {self.tipo_imovel or 'Não informado'}\n"
             f"Endereço: {self.endereco or 'Não informado'}\n"
-            f"Bairro: {self.bairro or 'Não informado'}\n"
-            f"Cidade: {self.cidade or 'Não informado'}\n"
-            f"Responsável: {self.responsavel or 'Não informado'}\n"
-            f"Telefone: {self.telefone or 'Não informado'}"
+            f"Observações: {self.observacoes or 'Não informado'}\n"
+            f"Status: {self.status or 'Não informado'}"
         )
 
     def to_dict(self) -> dict:
@@ -29,11 +27,10 @@ class CasaOracao:
         return {
             "codigo": self.codigo,
             "nome": self.nome,
+            "tipo_imovel": self.tipo_imovel,
             "endereco": self.endereco,
-            "bairro": self.bairro,
-            "cidade": self.cidade,
-            "responsavel": self.responsavel,
-            "telefone": self.telefone,
+            "observacoes": self.observacoes,
+            "status": self.status,
         }
 
     @classmethod
