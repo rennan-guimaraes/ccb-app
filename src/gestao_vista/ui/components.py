@@ -95,7 +95,7 @@ def create_sidebar(
     on_clear_gestao: Callable,
     on_clear_casas: Callable,
     on_view_casas: Callable,
-    on_add_observacao: Callable,
+    on_observacoes: Callable,
 ) -> Tuple[ttk.Frame, Tuple[ttk.Frame, tk.Button]]:
     """
     Cria a sidebar com os controles principais.
@@ -108,7 +108,7 @@ def create_sidebar(
         on_clear_gestao: Callback para limpar dados de gestão
         on_clear_casas: Callback para limpar dados das casas
         on_view_casas: Callback para visualizar casas
-        on_add_observacao: Callback para adicionar observação
+        on_observacoes: Callback para gerenciar observações
     """
     # Frame principal da sidebar com fundo escuro
     sidebar = ttk.Frame(root, style="Card.TFrame")
@@ -127,7 +127,7 @@ def create_sidebar(
         ("📊 Carregar Gestão", on_load_gestao, "primary"),
         ("🏠 Carregar Casas", on_load_casas, "primary"),
         ("👁️ Ver Casas", on_view_casas, "secondary"),
-        ("📝 Adicionar Observação", on_add_observacao, "secondary"),
+        ("📝 Observações", on_observacoes, "secondary"),
         ("🗑️ Limpar Gestão", on_clear_gestao, "error"),
         ("🗑️ Limpar Casas", on_clear_casas, "error"),
     ]
@@ -356,3 +356,148 @@ def create_form_field(
     entry.pack(fill=tk.X, pady=(5, 0))
 
     return field_frame, entry
+
+
+def create_searchable_combobox(
+    parent: tk.Widget,
+    textvariable: tk.StringVar,
+    items: dict,
+    placeholder: str = "Digite para buscar...",
+) -> Tuple[ttk.Frame, ttk.Entry, tk.Listbox]:
+    """
+    Cria um componente de busca com autocomplete.
+
+    Args:
+        parent: Widget pai
+        textvariable: Variável para armazenar o valor selecionado
+        items: Dicionário com os itens para busca {texto_exibido: valor}
+        placeholder: Texto placeholder para o campo de busca
+    """
+    # Frame principal
+    frame = ttk.Frame(parent, style="Card.TFrame")
+    frame.pack(fill=tk.X)
+
+    # Campo de busca
+    entry = ttk.Entry(
+        frame, style="Search.TEntry", font=DESIGN_SYSTEM["typography"]["body1"]
+    )
+    entry.pack(fill=tk.X, pady=2)
+
+    # Inserir placeholder
+    entry.insert(0, placeholder)
+    entry.configure(foreground=DESIGN_SYSTEM["colors"]["text"]["secondary"])
+
+    # Lista de resultados (inicialmente oculta)
+    listbox = tk.Listbox(
+        frame,
+        height=5,
+        font=DESIGN_SYSTEM["typography"]["body1"],
+        fg=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        bg=DESIGN_SYSTEM["colors"]["background"]["paper"],
+        selectmode=tk.SINGLE,
+        activestyle="none",
+        relief="flat",
+        highlightthickness=1,
+        highlightcolor=DESIGN_SYSTEM["colors"]["border"],
+        highlightbackground=DESIGN_SYSTEM["colors"]["border"],
+    )
+
+    # Scrollbar para a lista
+    scrollbar = ttk.Scrollbar(frame, orient="vertical", command=listbox.yview)
+    listbox.configure(yscrollcommand=scrollbar.set)
+
+    # Variáveis de controle
+    all_items = list(items.keys())
+    is_placeholder = True
+
+    def show_results():
+        """Mostra a lista de resultados"""
+        listbox.pack(fill=tk.X, pady=(0, 2), side=tk.LEFT, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=(0, 2))
+        frame.lift()  # Trazer para frente de outros widgets
+
+    def hide_results():
+        """Esconde a lista de resultados"""
+        listbox.pack_forget()
+        scrollbar.pack_forget()
+
+    def on_focus_in(event):
+        """Quando o campo recebe foco"""
+        nonlocal is_placeholder
+        if is_placeholder:
+            entry.delete(0, tk.END)
+            entry.configure(foreground=DESIGN_SYSTEM["colors"]["text"]["primary"])
+            is_placeholder = False
+        show_results()
+        update_results("")  # Mostrar todos os itens
+
+    def on_focus_out(event):
+        """Quando o campo perde foco"""
+        nonlocal is_placeholder
+        if not entry.get():
+            entry.insert(0, placeholder)
+            entry.configure(foreground=DESIGN_SYSTEM["colors"]["text"]["secondary"])
+            is_placeholder = True
+        # Pequeno delay para permitir a seleção do item
+        frame.after(100, hide_results)
+
+    def update_results(search_text: str):
+        """Atualiza a lista de resultados baseado no texto de busca"""
+        listbox.delete(0, tk.END)
+
+        # Se não houver texto de busca, mostrar todos os itens
+        if not search_text:
+            for item in all_items:
+                listbox.insert(tk.END, item)
+            return
+
+        # Filtrar itens que correspondem à busca (case insensitive)
+        search_text = search_text.lower()
+        matching_items = [item for item in all_items if search_text in item.lower()]
+
+        for item in matching_items:
+            listbox.insert(tk.END, item)
+
+    def on_select(event):
+        """Quando um item é selecionado da lista"""
+        if listbox.curselection():
+            selected = listbox.get(listbox.curselection())
+            entry.delete(0, tk.END)
+            entry.insert(0, selected)
+            textvariable.set(selected)
+            hide_results()
+
+    def on_key_release(event):
+        """Quando uma tecla é liberada no campo de busca"""
+        if event.keysym in ("Down", "Up"):
+            listbox.focus_set()
+            if event.keysym == "Down":
+                listbox.select_set(0)
+            return
+
+        current_text = entry.get()
+        if current_text == placeholder:
+            return
+
+        update_results(current_text)
+        show_results()
+
+    # Configurar eventos
+    entry.bind("<FocusIn>", on_focus_in)
+    entry.bind("<FocusOut>", on_focus_out)
+    entry.bind("<KeyRelease>", on_key_release)
+    listbox.bind("<<ListboxSelect>>", on_select)
+    listbox.bind("<FocusOut>", lambda e: hide_results())
+
+    # Configurar navegação por teclado na lista
+    def on_list_key(event):
+        if event.keysym == "Return":
+            on_select(None)
+            entry.focus_set()
+        elif event.keysym == "Escape":
+            hide_results()
+            entry.focus_set()
+
+    listbox.bind("<Key>", on_list_key)
+
+    return frame, entry, listbox

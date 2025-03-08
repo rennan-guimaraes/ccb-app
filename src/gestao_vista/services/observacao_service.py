@@ -50,3 +50,22 @@ class ObservacaoService:
             if obs["id"] == observacao_id:
                 return Observacao.from_dict(obs)
         return None
+
+    def atualizar_observacao(self, observacao: Observacao) -> bool:
+        """Atualiza uma observação existente"""
+        observacoes = self._load_observacoes()
+
+        for i, obs in enumerate(observacoes):
+            if obs["id"] == observacao.id:
+                observacoes[i] = observacao.to_dict()
+                self._save_observacoes(observacoes)
+                return True
+
+        return False
+
+    def excluir_observacao(self, observacao_id: str) -> bool:
+        """Exclui uma observação"""
+        observacoes = self._load_observacoes()
+        observacoes = [obs for obs in observacoes if obs["id"] != observacao_id]
+        self._save_observacoes(observacoes)
+        return True

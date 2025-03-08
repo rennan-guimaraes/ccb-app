@@ -39,6 +39,62 @@ def setup_styles() -> None:
     """Configura os estilos do ttk com base no design system."""
     style = ttk.Style()
 
+    # Configurar tema escuro
+    style.configure(
+        "Card.TFrame",
+        background=DESIGN_SYSTEM["colors"]["background"]["paper"],
+    )
+
+    # Configurar estilo do separador
+    style.configure(
+        "Separator.TFrame",
+        background=DESIGN_SYSTEM["colors"]["border"],
+    )
+
+    # Configurar estilo dos labels
+    style.configure(
+        "Header.TLabel",
+        background=DESIGN_SYSTEM["colors"]["background"]["paper"],
+        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        font=DESIGN_SYSTEM["typography"]["h1"],
+    )
+
+    style.configure(
+        "SubHeader.TLabel",
+        background=DESIGN_SYSTEM["colors"]["background"]["paper"],
+        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        font=DESIGN_SYSTEM["typography"]["h2"],
+    )
+
+    style.configure(
+        "Default.TLabel",
+        background=DESIGN_SYSTEM["colors"]["background"]["paper"],
+        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        font=DESIGN_SYSTEM["typography"]["body1"],
+    )
+
+    # Configurar estilo dos botões
+    style.configure(
+        "Primary.TButton",
+        background=DESIGN_SYSTEM["colors"]["primary"],
+        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        font=DESIGN_SYSTEM["typography"]["button"],
+    )
+
+    style.configure(
+        "Secondary.TButton",
+        background=DESIGN_SYSTEM["colors"]["secondary"],
+        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        font=DESIGN_SYSTEM["typography"]["button"],
+    )
+
+    style.configure(
+        "Error.TButton",
+        background=DESIGN_SYSTEM["colors"]["error"],
+        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        font=DESIGN_SYSTEM["typography"]["button"],
+    )
+
     # Configurar estilo geral
     style.configure(
         ".",
@@ -62,22 +118,6 @@ def setup_styles() -> None:
         background=DESIGN_SYSTEM["colors"]["background"]["paper"],
         foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
         font=DESIGN_SYSTEM["typography"]["body1"],
-    )
-
-    # Estilo para headers
-    style.configure(
-        "Header.TLabel",
-        font=DESIGN_SYSTEM["typography"]["h1"],
-        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
-        background=DESIGN_SYSTEM["colors"]["background"]["paper"],
-    )
-
-    # Estilo para sub-headers
-    style.configure(
-        "SubHeader.TLabel",
-        font=DESIGN_SYSTEM["typography"]["h2"],
-        foreground=DESIGN_SYSTEM["colors"]["text"]["secondary"],
-        background=DESIGN_SYSTEM["colors"]["background"]["paper"],
     )
 
     # Estilo para combobox
@@ -174,6 +214,28 @@ def setup_styles() -> None:
         foreground=[
             ("active", DESIGN_SYSTEM["colors"]["text"]["primary"]),
             ("pressed", DESIGN_SYSTEM["colors"]["text"]["primary"]),
+        ],
+    )
+
+    # Configurar estilo do campo de busca
+    style.configure(
+        "Search.TEntry",
+        background=DESIGN_SYSTEM["colors"]["background"]["paper"],
+        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        fieldbackground=DESIGN_SYSTEM["colors"]["background"]["paper"],
+        borderwidth=1,
+        relief="solid",
+        padding=8,
+    )
+
+    style.map(
+        "Search.TEntry",
+        fieldbackground=[
+            ("focus", DESIGN_SYSTEM["colors"]["background"]["paper"]),
+            ("readonly", DESIGN_SYSTEM["colors"]["background"]["paper"]),
+        ],
+        foreground=[
+            ("focus", DESIGN_SYSTEM["colors"]["text"]["primary"]),
         ],
     )
 
