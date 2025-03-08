@@ -123,6 +123,31 @@ class GestaoVistaApp:
                 self.export_container.pack_forget()
                 self.export_button.configure(state="disabled")
 
+    def export_graph(self, fig):
+        """Exporta o gráfico como imagem"""
+        file_path = tk.filedialog.asksaveasfilename(
+            defaultextension=".png",
+            filetypes=[
+                ("PNG files", "*.png"),
+                ("JPEG files", "*.jpg"),
+                ("PDF files", "*.pdf"),
+            ],
+            title="Salvar gráfico como",
+            initialfile="grafico_gestao_vista.png",
+        )
+
+        if file_path:
+            try:
+                fig.savefig(
+                    file_path,
+                    facecolor=fig.get_facecolor(),
+                    bbox_inches="tight",
+                    dpi=300,
+                )
+                messagebox.showinfo("✅ Sucesso", "Gráfico exportado com sucesso!")
+            except Exception as e:
+                messagebox.showerror("❌ Erro", f"Erro ao exportar gráfico: {str(e)}")
+
     def plot_graph(self):
         """Plota o gráfico com os dados atuais"""
         if self.df_gestao is None or self.df_gestao.empty or not self.caracteristicas:
@@ -142,6 +167,13 @@ class GestaoVistaApp:
         # Limpar frame do gráfico
         for widget in self.graph_frame.winfo_children():
             widget.destroy()
+
+        # Criar frame para o gráfico e controles
+        controls_frame = ttk.Frame(self.graph_frame, style="Card.TFrame")
+        controls_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+
+        graph_container = ttk.Frame(self.graph_frame, style="Card.TFrame")
+        graph_container.pack(fill=tk.BOTH, expand=True)
 
         # Configurar gráfico
         fig, ax = plt.subplots(
@@ -253,9 +285,20 @@ class GestaoVistaApp:
                 color=DESIGN_SYSTEM["colors"]["text"]["primary"],
             )
 
-        # Ajustar layout e exibir
+        # Ajustar layout
         plt.tight_layout()
-        canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
+
+        # Adicionar botão de exportação
+        export_btn = create_button(
+            controls_frame,
+            "📸 Exportar Gráfico",
+            lambda: self.export_graph(fig),
+            "primary",
+        )
+        export_btn.pack(side=tk.RIGHT, padx=5)
+
+        # Criar canvas e exibir
+        canvas = FigureCanvasTkAgg(fig, master=graph_container)
         canvas.draw()
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
