@@ -149,38 +149,61 @@ class GestaoVistaApp:
         )
         ax.set_facecolor(DESIGN_SYSTEM["colors"]["background"]["paper"])
 
-        # Calcular dados e definir cores
-        contagens = []
-        cores = []
+        # Separar características em obrigatórias e opcionais
+        caracteristicas_obrigatorias = []
+        caracteristicas_opcionais = []
+        contagens_obrigatorias = []
+        contagens_opcionais = []
+        cores_obrigatorias = []
+        cores_opcionais = []
         total_casas = len(self.df_gestao)
 
+        # Classificar características
         for caracteristica in self.caracteristicas:
             valores = self.df_gestao[caracteristica].fillna("").astype(str)
             contagem = valores.str.upper().str.strip().eq("X").sum()
-            contagens.append(contagem)
 
-            # Definir cor baseada se é documento obrigatório
             if is_documento_obrigatorio(caracteristica):
-                cores.append(
-                    DESIGN_SYSTEM["colors"]["error"]
-                )  # Vermelho para obrigatórios
+                caracteristicas_obrigatorias.append(caracteristica)
+                contagens_obrigatorias.append(contagem)
+                cores_obrigatorias.append(DESIGN_SYSTEM["colors"]["error"])
             else:
-                cores.append(
-                    DESIGN_SYSTEM["colors"]["primary"]
-                )  # Cor padrão para os demais
+                caracteristicas_opcionais.append(caracteristica)
+                contagens_opcionais.append(contagem)
+                cores_opcionais.append(DESIGN_SYSTEM["colors"]["primary"])
+
+        # Ordenar obrigatórios por contagem (maior para menor)
+        indices_ordenados_obrig = np.argsort(contagens_obrigatorias)[::-1]
+        caracteristicas_obrigatorias = [
+            caracteristicas_obrigatorias[i] for i in indices_ordenados_obrig
+        ]
+        contagens_obrigatorias = [
+            contagens_obrigatorias[i] for i in indices_ordenados_obrig
+        ]
+        cores_obrigatorias = [cores_obrigatorias[i] for i in indices_ordenados_obrig]
+
+        # Ordenar opcionais por contagem (maior para menor)
+        indices_ordenados_opc = np.argsort(contagens_opcionais)[::-1]
+        caracteristicas_opcionais = [
+            caracteristicas_opcionais[i] for i in indices_ordenados_opc
+        ]
+        contagens_opcionais = [contagens_opcionais[i] for i in indices_ordenados_opc]
+        cores_opcionais = [cores_opcionais[i] for i in indices_ordenados_opc]
+
+        # Combinar listas mantendo a ordem (obrigatórios à esquerda, opcionais à direita)
+        todas_caracteristicas = caracteristicas_obrigatorias + caracteristicas_opcionais
+        todas_contagens = contagens_obrigatorias + contagens_opcionais
+        todas_cores = cores_obrigatorias + cores_opcionais
 
         # Criar gráfico
-        bars = ax.bar(range(len(self.caracteristicas)), contagens, color=cores)
-
-        # Adicionar linha de 100% para documentos obrigatórios
-        ax.axhline(
-            y=total_casas, color="red", linestyle="--", alpha=0.3, label="Meta (100%)"
+        bars = ax.bar(
+            range(len(todas_caracteristicas)), todas_contagens, color=todas_cores
         )
 
         # Configurar eixos e labels
-        ax.set_xticks(range(len(self.caracteristicas)))
+        ax.set_xticks(range(len(todas_caracteristicas)))
         ax.set_xticklabels(
-            self.caracteristicas,
+            todas_caracteristicas,
             rotation=45,
             ha="right",
             fontsize=10,
@@ -195,7 +218,7 @@ class GestaoVistaApp:
         )
 
         ax.set_title(
-            "Características das Casas de Oração\n(Documentos obrigatórios em vermelho)",
+            "Características das Casas de Oração\n(Documentos obrigatórios em vermelho à esquerda, ordenados de maior para menor)",
             fontsize=14,
             color=DESIGN_SYSTEM["colors"]["text"]["primary"],
             pad=20,
@@ -229,9 +252,6 @@ class GestaoVistaApp:
                 fontweight="bold",
                 color=DESIGN_SYSTEM["colors"]["text"]["primary"],
             )
-
-        # Adicionar legenda
-        ax.legend()
 
         # Ajustar layout e exibir
         plt.tight_layout()
