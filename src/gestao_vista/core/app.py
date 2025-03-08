@@ -23,6 +23,7 @@ from ..ui.components import (
     create_form_field,
     create_button,
 )
+from ..ui.comparative_analysis_ui import ComparativeAnalysisUI
 
 
 class GestaoVistaApp:
@@ -57,6 +58,7 @@ class GestaoVistaApp:
         self.report_service = None  # Será inicializado após carregar os dados
         self.graph_service = GraphService()
         self.table_service = TableService()
+        self.comparative_analysis_ui = ComparativeAnalysisUI(self.data_service)
 
         # Carregar dados salvos
         self.load_saved_data()
@@ -123,6 +125,15 @@ class GestaoVistaApp:
             "primary" if self.view_mode.get() == "table" else "secondary",
         )
         table_btn.pack(side=tk.LEFT, padx=5)
+
+        # Botão de análise comparativa
+        comparative_btn = create_button(
+            toggle_frame,
+            "📈 Análise Comparativa",
+            self.show_comparative_analysis,
+            "primary",
+        )
+        comparative_btn.pack(side=tk.LEFT, padx=5)
 
         # Criar controles
         self.controls_frame, self.caracteristica_combo, self.feedback_label = (
@@ -276,3 +287,13 @@ class GestaoVistaApp:
             return
 
         self.report_service.export_faltantes(caracteristica, self.coluna_codigo)
+
+    def show_comparative_analysis(self):
+        """Mostra a janela de análise comparativa"""
+        if self.df_gestao is None:
+            messagebox.showwarning(
+                "⚠️ Aviso", "Carregue primeiro o arquivo de Gestão à Vista atual!"
+            )
+            return
+
+        self.comparative_analysis_ui.show_dialog(self.df_gestao)

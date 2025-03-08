@@ -171,9 +171,38 @@ class DataService:
                 "Certifique-se que o arquivo não está corrompido e está no formato correto (.xls ou .xlsx)"
             )
 
-    def import_gestao_from_excel(self, file_path: str) -> Optional[pd.DataFrame]:
+    def import_gestao_from_excel(
+        self, file_path: str, should_save: bool = True
+    ) -> Optional[pd.DataFrame]:
         """
         Importa dados de gestão de um arquivo Excel.
+
+        Args:
+            file_path: Caminho para o arquivo Excel
+            should_save: Se True, salva os dados no arquivo gestao.json. Se False, apenas retorna o DataFrame.
+        """
+        try:
+            df = self._import_gestao_from_excel_internal(file_path)
+
+            if df is not None and should_save:
+                self.save_gestao(df)
+
+            return df
+        except Exception as e:
+            print(f"Erro ao importar arquivo de gestão: {e}")
+            messagebox.showerror(
+                "❌ Erro",
+                f"Erro ao importar arquivo de gestão:\n{str(e)}\n\n"
+                "Certifique-se que o arquivo está no formato correto e tente novamente.",
+            )
+            return None
+
+    def _import_gestao_from_excel_internal(
+        self, file_path: str
+    ) -> Optional[pd.DataFrame]:
+        """
+        Função interna para importar dados de gestão de um arquivo Excel.
+        Esta função não salva os dados, apenas processa e retorna o DataFrame.
 
         Args:
             file_path: Caminho para o arquivo Excel
@@ -242,16 +271,10 @@ class DataService:
             for col in df.columns:
                 df[col] = df[col].astype(str).str.strip()
 
-            self.save_gestao(df)
             return df
         except Exception as e:
             print(f"Erro ao importar arquivo de gestão: {e}")
-            messagebox.showerror(
-                "❌ Erro",
-                f"Erro ao importar arquivo de gestão:\n{str(e)}\n\n"
-                "Certifique-se que o arquivo está no formato correto e tente novamente.",
-            )
-            return None
+            raise
 
     def import_casas_from_excel(self, file_path: str) -> List[CasaOracao]:
         """
