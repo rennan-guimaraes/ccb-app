@@ -13,9 +13,13 @@ from ..utils.design_system import DESIGN_SYSTEM
 from ..models.casa_oracao import CasaOracao
 from ..ui.components import create_button
 from ..utils.constants import is_documento_obrigatorio
+from ..services.observacao_service import ObservacaoService
 
 
 class TableService:
+    def __init__(self):
+        self.observacao_service = ObservacaoService()
+
     @staticmethod
     def plot_table(
         table_frame: ttk.Frame,
@@ -213,6 +217,9 @@ class TableService:
             return
 
         try:
+            # Inicializar ObservacaoService
+            observacao_service = ObservacaoService()
+
             # Separar características em obrigatórias e opcionais
             caracteristicas_obrigatorias = []
             caracteristicas_opcionais = []
@@ -231,6 +238,12 @@ class TableService:
             percentuais_opcionais = []
 
             for casa in casas:
+                # Carregar observações para esta casa
+                observacoes = observacao_service.listar_observacoes_por_casa(
+                    casa.codigo
+                )
+                documentos_com_observacao = {obs.documento for obs in observacoes}
+
                 nomes_casas.append(casa.nome)
 
                 # Processar documentos obrigatórios
@@ -316,7 +329,9 @@ class TableService:
             headers.append("% Opc.")
 
             # Função auxiliar para criar tabela
-            def criar_tabela(ax, nomes, dados_obrig, dados_opc, perc_obrig, perc_opc):
+            def criar_tabela(
+                ax, nomes, dados_obrig, dados_opc, perc_obrig, perc_opc, casas_indices
+            ):
                 # Calcular largura ideal para coluna de nomes
                 nome_mais_longo = max(nomes, key=len)
                 largura_nome = max(
@@ -348,30 +363,44 @@ class TableService:
 
                 # Preparar cores das células
                 cell_colors = []
-                for i in range(len(nomes)):
-                    row_colors = [DESIGN_SYSTEM["colors"]["background"]["paper"]]
-                    row_colors.extend(
-                        [
-                            (
-                                DESIGN_SYSTEM["colors"]["success"]
-                                if valor
-                                else DESIGN_SYSTEM["colors"]["error"]
-                            )
-                            for valor in dados_obrig[i]
-                        ]
+                for i, casa_idx in enumerate(casas_indices):
+                    casa = casas[casa_idx]
+                    observacoes = observacao_service.listar_observacoes_por_casa(
+                        casa.codigo
                     )
+                    documentos_com_observacao = {obs.documento for obs in observacoes}
+
+                    row_colors = [DESIGN_SYSTEM["colors"]["background"]["paper"]]
+
+                    # Cores para documentos obrigatórios
+                    for j, valor in enumerate(dados_obrig[i]):
+                        doc = caracteristicas_obrigatorias[j]
+                        if valor:  # Tem o documento
+                            row_colors.append(DESIGN_SYSTEM["colors"]["success"])
+                        else:  # Não tem o documento
+                            if doc in documentos_com_observacao:
+                                row_colors.append(
+                                    "#FFA726"
+                                )  # Laranja para documentos com observação
+                            else:
+                                row_colors.append(DESIGN_SYSTEM["colors"]["error"])
+
                     row_colors.append(DESIGN_SYSTEM["colors"]["background"]["paper"])
                     row_colors.append(DESIGN_SYSTEM["colors"]["background"]["default"])
-                    row_colors.extend(
-                        [
-                            (
-                                DESIGN_SYSTEM["colors"]["success"]
-                                if valor
-                                else DESIGN_SYSTEM["colors"]["error"]
-                            )
-                            for valor in dados_opc[i]
-                        ]
-                    )
+
+                    # Cores para documentos opcionais
+                    for j, valor in enumerate(dados_opc[i]):
+                        doc = caracteristicas_opcionais[j]
+                        if valor:  # Tem o documento
+                            row_colors.append(DESIGN_SYSTEM["colors"]["success"])
+                        else:  # Não tem o documento
+                            if doc in documentos_com_observacao:
+                                row_colors.append(
+                                    "#FFA726"
+                                )  # Laranja para documentos com observação
+                            else:
+                                row_colors.append(DESIGN_SYSTEM["colors"]["error"])
+
                     row_colors.append(DESIGN_SYSTEM["colors"]["background"]["paper"])
                     cell_colors.append(row_colors)
 
@@ -459,7 +488,10 @@ class TableService:
 
                 return table
 
-            # Criar as duas tabelas
+            # Criar as duas tabelas com índices das casas
+            indices_primeira_metade = list(range(metade))
+            indices_segunda_metade = list(range(metade, len(casas)))
+
             table1 = criar_tabela(
                 ax1,
                 nomes_casas_1,
@@ -467,6 +499,7 @@ class TableService:
                 dados_opcionais_1,
                 percentuais_obrigatorios_1,
                 percentuais_opcionais_1,
+                indices_primeira_metade,
             )
 
             if len(nomes_casas_2) > 0:  # Só criar segunda tabela se houver dados
@@ -477,6 +510,7 @@ class TableService:
                     dados_opcionais_2,
                     percentuais_obrigatorios_2,
                     percentuais_opcionais_2,
+                    indices_segunda_metade,
                 )
             else:
                 ax2.axis("off")

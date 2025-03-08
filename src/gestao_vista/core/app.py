@@ -13,6 +13,7 @@ from ..services.table_service import TableService
 from ..services.casa_oracao_service import CasaOracaoService
 from ..services.report_service import ReportService
 from ..ui.casa_oracao_ui import CasaOracaoUI
+from ..ui.observacao_ui import ObservacaoUI
 from ..utils.design_system import DESIGN_SYSTEM, setup_styles
 from ..utils.constants import is_documento_obrigatorio
 from ..ui.components import (
@@ -55,6 +56,9 @@ class GestaoVistaApp:
         self.data_service = DataService()
         self.casa_oracao_service = CasaOracaoService(self.data_service)
         self.casa_oracao_ui = CasaOracaoUI(self.casa_oracao_service)
+        self.observacao_ui = ObservacaoUI(
+            self.root, self.casa_oracao_service, self.data_service
+        )
         self.report_service = None  # Será inicializado após carregar os dados
         self.graph_service = GraphService()
         self.table_service = TableService()
@@ -153,6 +157,7 @@ class GestaoVistaApp:
             self.clear_gestao,
             self.casa_oracao_service.clear_casas,
             lambda: self.casa_oracao_ui.view_casas(self.root),
+            lambda: self.observacao_ui.show(),
         )
 
     def toggle_view(self, mode: str):

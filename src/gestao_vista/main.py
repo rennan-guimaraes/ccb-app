@@ -5,6 +5,7 @@ from .ui.components import create_sidebar, create_controls
 from .ui.styles import setup_styles, DESIGN_SYSTEM
 from .services.data_service import DataService
 from .services.excel_service import ExcelService
+from .ui.observacao_ui import ObservacaoUI
 
 
 def main():
@@ -36,6 +37,9 @@ def main():
     main_frame = ttk.Frame(root, style="Card.TFrame")
     main_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
+    # Criar interface de observações
+    observacao_ui = ObservacaoUI(root)
+
     # Criar controles
     def on_caracteristica_selected(is_valid: bool):
         """Callback para quando uma característica é selecionada."""
@@ -59,6 +63,7 @@ def main():
         lambda: data_service.clear_gestao(),
         lambda: data_service.clear_casas(),
         lambda: excel_service.view_casas(),
+        lambda: observacao_ui.show(),
     )
 
     # Iniciar loop principal

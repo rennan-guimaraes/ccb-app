@@ -95,6 +95,7 @@ def create_sidebar(
     on_clear_gestao: Callable,
     on_clear_casas: Callable,
     on_view_casas: Callable,
+    on_add_observacao: Callable,
 ) -> Tuple[ttk.Frame, Tuple[ttk.Frame, tk.Button]]:
     """
     Cria a sidebar com os controles principais.
@@ -107,6 +108,7 @@ def create_sidebar(
         on_clear_gestao: Callback para limpar dados de gestão
         on_clear_casas: Callback para limpar dados das casas
         on_view_casas: Callback para visualizar casas
+        on_add_observacao: Callback para adicionar observação
     """
     # Frame principal da sidebar com fundo escuro
     sidebar = ttk.Frame(root, style="Card.TFrame")
@@ -125,6 +127,7 @@ def create_sidebar(
         ("📊 Carregar Gestão", on_load_gestao, "primary"),
         ("🏠 Carregar Casas", on_load_casas, "primary"),
         ("👁️ Ver Casas", on_view_casas, "secondary"),
+        ("📝 Adicionar Observação", on_add_observacao, "secondary"),
         ("🗑️ Limpar Gestão", on_clear_gestao, "error"),
         ("🗑️ Limpar Casas", on_clear_casas, "error"),
     ]
