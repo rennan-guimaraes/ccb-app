@@ -146,21 +146,27 @@ def create_sidebar(
     return sidebar, (export_container, export_button)
 
 
-def create_main_content(root: tk.Tk) -> Tuple[ttk.Frame, ttk.Frame]:
+def create_main_content(root: tk.Tk) -> Tuple[ttk.Frame, ttk.Frame, ttk.Frame]:
     """
     Cria o conteúdo principal da aplicação.
 
     Args:
         root: Janela principal
+
+    Returns:
+        Tuple contendo o frame principal, frame do gráfico e frame da tabela
     """
     main_frame = ttk.Frame(root, style="Card.TFrame")
     main_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-    # Frame para o gráfico
+    # Frame para o gráfico (inicialmente visível)
     graph_frame = ttk.Frame(main_frame, style="Card.TFrame")
     graph_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-    return main_frame, graph_frame
+    # Frame para a tabela (inicialmente escondido)
+    table_frame = ttk.Frame(main_frame, style="Card.TFrame")
+
+    return main_frame, graph_frame, table_frame
 
 
 def create_combobox(

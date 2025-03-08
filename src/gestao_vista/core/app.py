@@ -9,6 +9,7 @@ from typing import Optional, List, Dict, Any, Callable
 from ..models.casa_oracao import CasaOracao
 from ..services.data_service import DataService
 from ..services.graph_service import GraphService
+from ..services.table_service import TableService
 from ..services.casa_oracao_service import CasaOracaoService
 from ..services.report_service import ReportService
 from ..ui.casa_oracao_ui import CasaOracaoUI
@@ -47,6 +48,7 @@ class GestaoVistaApp:
         self.caracteristica_combo: Optional[ttk.Combobox] = None
         self.caracteristica_var = tk.StringVar()
         self.coluna_codigo: Optional[str] = None
+        self.view_mode = tk.StringVar(value="graph")  # "graph" ou "table"
 
         # Inicializar serviços
         self.data_service = DataService()
@@ -54,6 +56,7 @@ class GestaoVistaApp:
         self.casa_oracao_ui = CasaOracaoUI(self.casa_oracao_service)
         self.report_service = None  # Será inicializado após carregar os dados
         self.graph_service = GraphService()
+        self.table_service = TableService()
 
         # Carregar dados salvos
         self.load_saved_data()
@@ -96,7 +99,30 @@ class GestaoVistaApp:
     def setup_ui(self):
         """Configura a interface do usuário"""
         # Criar componentes principais
-        self.main_frame, self.graph_frame = create_main_content(self.root)
+        self.main_frame, self.graph_frame, self.table_frame = create_main_content(
+            self.root
+        )
+
+        # Criar frame para os botões de alternância
+        toggle_frame = ttk.Frame(self.main_frame, style="Card.TFrame")
+        toggle_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+
+        # Botões de alternância
+        graph_btn = create_button(
+            toggle_frame,
+            "📊 Gráfico",
+            lambda: self.toggle_view("graph"),
+            "primary" if self.view_mode.get() == "graph" else "secondary",
+        )
+        graph_btn.pack(side=tk.LEFT, padx=5)
+
+        table_btn = create_button(
+            toggle_frame,
+            "📋 Tabela",
+            lambda: self.toggle_view("table"),
+            "primary" if self.view_mode.get() == "table" else "secondary",
+        )
+        table_btn.pack(side=tk.LEFT, padx=5)
 
         # Criar controles
         self.controls_frame, self.caracteristica_combo, self.feedback_label = (
@@ -118,11 +144,36 @@ class GestaoVistaApp:
             lambda: self.casa_oracao_ui.view_casas(self.root),
         )
 
+    def toggle_view(self, mode: str):
+        """Alterna entre visualização em gráfico e tabela"""
+        if mode == "table":
+            # Exportar tabela diretamente
+            self.table_service.export_table_view(
+                self.df_gestao,
+                self.casas,
+                self.caracteristicas,
+            )
+        else:
+            self.view_mode.set(mode)
+            self.update_ui_with_data()
+
     def update_ui_with_data(self):
         """Atualiza a interface com os dados carregados"""
         if self.df_gestao is not None:
             self.caracteristica_combo["values"] = self.caracteristicas
-            self.plot_graph()
+
+            # Esconder ambos os frames
+            self.graph_frame.pack_forget()
+            self.table_frame.pack_forget()
+
+            # Mostrar apenas o gráfico
+            self.graph_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            self.graph_service.plot_graph(
+                self.graph_frame,
+                self.df_gestao,
+                self.caracteristicas,
+                len(self.df_gestao),
+            )
 
     def on_caracteristica_selected(self, is_valid: bool):
         """Callback para quando uma característica é selecionada"""
@@ -158,16 +209,6 @@ class GestaoVistaApp:
                 messagebox.showinfo("✅ Sucesso", "Gráfico exportado com sucesso!")
             except Exception as e:
                 messagebox.showerror("❌ Erro", f"Erro ao exportar gráfico: {str(e)}")
-
-    def plot_graph(self):
-        """Plota o gráfico com os dados atuais"""
-        if self.df_gestao is not None:
-            self.graph_service.plot_graph(
-                self.graph_frame,
-                self.df_gestao,
-                self.caracteristicas,
-                len(self.df_gestao),
-            )
 
     def load_gestao_file(self):
         """Carrega arquivo de Gestão à Vista"""
