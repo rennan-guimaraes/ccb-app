@@ -137,3 +137,23 @@ class CasaOracaoService:
                 )
                 return True
         return False
+
+    def import_casas_from_excel(self, file_path: str) -> List[CasaOracao]:
+        """
+        Importa casas de oração de um arquivo Excel.
+
+        Args:
+            file_path: Caminho para o arquivo Excel
+
+        Returns:
+            List[CasaOracao]: Lista de casas importadas
+
+        Raises:
+            ValueError: Se houver erro de validação
+            Exception: Se houver erro inesperado
+        """
+        novas_casas = self.data_service.import_casas_from_excel(file_path)
+        if novas_casas:
+            self.casas = novas_casas
+            return novas_casas
+        return []

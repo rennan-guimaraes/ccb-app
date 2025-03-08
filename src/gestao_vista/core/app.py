@@ -152,10 +152,10 @@ class GestaoVistaApp:
         self.sidebar, (self.export_container, self.export_button) = create_sidebar(
             self.root,
             self.load_gestao_file,
-            self.casa_oracao_service.load_casas_file,
+            None,  # Removido callback de carregar casas
             self.export_faltantes,
             self.clear_gestao,
-            self.casa_oracao_service.clear_casas,
+            None,  # Removido callback de limpar casas
             lambda: self.casa_oracao_ui.view_casas(self.root),
             lambda: self.observacao_ui.show(),
         )

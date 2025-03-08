@@ -125,11 +125,9 @@ def create_sidebar(
     # Botões principais com espaçamento consistente
     buttons = [
         ("📊 Carregar Gestão", on_load_gestao, "primary"),
-        ("🏠 Carregar Casas", on_load_casas, "primary"),
-        ("👁️ Ver Casas", on_view_casas, "secondary"),
+        ("🏠 Casas de Oração", on_view_casas, "primary"),
         ("📝 Observações", on_observacoes, "secondary"),
         ("🗑️ Limpar Gestão", on_clear_gestao, "error"),
-        ("🗑️ Limpar Casas", on_clear_casas, "error"),
     ]
 
     for text, command, style in buttons:

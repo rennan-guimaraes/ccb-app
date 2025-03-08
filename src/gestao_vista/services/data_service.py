@@ -4,7 +4,7 @@ import pandas as pd
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox
 
 from ..models.casa_oracao import CasaOracao
 from ..utils.constants import normalizar_nome_documento
@@ -66,10 +66,15 @@ class DataService:
             if self.casas_file.exists():
                 with open(self.casas_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                return [CasaOracao.from_dict(casa) for casa in data]
+                    if not isinstance(data, list):
+                        print(
+                            f"Erro: dados do arquivo não são uma lista, recebido {type(data)}"
+                        )
+                        return []
+                    return [CasaOracao.from_dict(casa) for casa in data]
             return []
         except Exception as e:
-            print(f"Erro ao carregar casas de oração: {e}")
+            print(f"Erro ao carregar casas de oração: {str(e)}")
             return []
 
     def save_casas(self, casas: List[CasaOracao]) -> bool:
@@ -80,12 +85,16 @@ class DataService:
             casas: Lista de casas de oração
         """
         try:
+            if not isinstance(casas, list):
+                print(f"Erro: casas deve ser uma lista, recebido {type(casas)}")
+                return False
+
             data = [casa.to_dict() for casa in casas]
             with open(self.casas_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             return True
         except Exception as e:
-            print(f"Erro ao salvar casas de oração: {e}")
+            print(f"Erro ao salvar casas: {str(e)}")
             return False
 
     def clear_gestao(self) -> bool:
@@ -282,116 +291,178 @@ class DataService:
 
         Args:
             file_path: Caminho para o arquivo Excel
+
+        Returns:
+            List[CasaOracao]: Lista de casas importadas
         """
         try:
-            # Ler o arquivo Excel, ignorando a primeira linha
-            df = self._read_excel_safe(file_path)
+            # Verificar extensão do arquivo
+            if not file_path.endswith((".xlsx", ".xls")):
+                raise ValueError("Arquivo deve ser do tipo Excel (.xlsx ou .xls)")
 
-            # Remover a primeira linha (cabeçalho)
-            df = df.iloc[1:]
+            # Ler o arquivo Excel
+            try:
+                print(f"Tentando ler arquivo: {file_path}")
+                df = pd.read_excel(file_path, dtype=str)
+                print(
+                    f"Arquivo lido com sucesso. Colunas encontradas: {df.columns.tolist()}"
+                )
+            except Exception as e:
+                print(f"Erro detalhado ao ler Excel: {str(e)}")
+                raise ValueError(f"Erro ao ler arquivo Excel: {str(e)}")
 
-            # Validar DataFrame
-            if df is None or df.empty:
-                raise ValueError("Arquivo Excel está vazio ou com formato inválido")
+            if df.empty:
+                raise ValueError("Arquivo Excel está vazio")
 
-            # Converter todas as colunas para string
-            df.columns = df.columns.astype(str)
-
-            # Se as colunas são números (0, 1, 2, etc), mapear para os nomes corretos
-            if all(col.isdigit() for col in df.columns):
-                # Mapear colunas numéricas para nomes
-                numeric_mapping = {
-                    "0": "codigo",
-                    "1": "nome",
-                    "2": "casa_oracao",  # Ignorar esta coluna
-                    "3": "tipo_imovel",
-                    "4": "endereco",
-                    "5": "observacoes",
-                    "6": "status",
-                }
-                df = df.rename(columns=numeric_mapping)
-            else:
-                # Mapear colunas para o formato esperado
-                column_mapping = {
-                    "Código": "codigo",
-                    "CÓDIGO": "codigo",
-                    "CODIGO": "codigo",
-                    "codigo": "codigo",
-                    "Nome": "nome",
-                    "NOME": "nome",
-                    "nome": "nome",
-                    "Tipo Imóvel": "tipo_imovel",
-                    "TIPO IMÓVEL": "tipo_imovel",
-                    "tipo_imovel": "tipo_imovel",
-                    "Endereço": "endereco",
-                    "ENDEREÇO": "endereco",
-                    "ENDERECO": "endereco",
-                    "Endereco": "endereco",
-                    "endereco": "endereco",
-                    "Observações": "observacoes",
-                    "OBSERVAÇÕES": "observacoes",
-                    "observacoes": "observacoes",
-                    "Status": "status",
-                    "STATUS": "status",
-                    "status": "status",
-                }
-
-                # Limpar nomes das colunas
-                df.columns = [str(col).strip() for col in df.columns]
-
-                # Tentar encontrar as colunas corretas mesmo com variações de nome
-                for original_col in df.columns:
-                    # Tentar encontrar o mapeamento ignorando acentos e maiúsculas/minúsculas
-                    normalized_col = original_col.lower().strip()
-                    for key in column_mapping:
-                        if key.lower().strip() == normalized_col:
-                            df = df.rename(columns={original_col: column_mapping[key]})
-                            break
-
-            # Validar colunas obrigatórias
+            # Validar colunas necessárias
             required_columns = ["codigo", "nome"]
-            missing_columns = [col for col in required_columns if col not in df.columns]
+            df.columns = (
+                df.columns.str.lower().str.strip()
+            )  # Converter e limpar nomes das colunas
+            print(f"Colunas após normalização: {df.columns.tolist()}")
 
+            # Verificar se as colunas obrigatórias existem
+            missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 raise ValueError(
-                    f"Colunas obrigatórias não encontradas: {', '.join(missing_columns)}\n"
-                    f"Colunas encontradas: {', '.join(df.columns)}"
+                    f"Colunas obrigatórias não encontradas: {', '.join(missing_columns)}.\n"
+                    f"Colunas disponíveis: {', '.join(df.columns)}"
                 )
 
+            # Processar cada linha
             casas = []
             for idx, row in df.iterrows():
                 try:
-                    # Limpar e converter valores
-                    casa_dict = {
-                        "codigo": str(row.get("codigo", "")).strip(),
-                        "nome": str(row.get("nome", "")).strip(),
-                        "tipo_imovel": str(row.get("tipo_imovel", "")).strip(),
-                        "endereco": str(row.get("endereco", "")).strip(),
-                        "observacoes": str(row.get("observacoes", "")).strip(),
-                        "status": str(row.get("status", "")).strip(),
-                    }
+                    # Limpar e validar dados
+                    codigo = str(row.get("codigo", "")).strip()
+                    nome = str(row.get("nome", "")).strip()
 
-                    # Validar dados obrigatórios
-                    if not casa_dict["codigo"] or not casa_dict["nome"]:
-                        print(f"Linha {idx + 2}: Código ou nome vazios")
+                    if not codigo or not nome:
+                        print(f"Linha {idx + 1} ignorada: código ou nome vazios")
                         continue
 
-                    casa = CasaOracao.from_dict(casa_dict)
+                    print(f"Processando linha {idx + 1}: código={codigo}, nome={nome}")
+
+                    # Criar objeto casa
+                    casa = CasaOracao(
+                        codigo=codigo,
+                        nome=nome,
+                        tipo_imovel=str(row.get("tipo_imovel", "")).strip() or None,
+                        endereco=str(row.get("endereco", "")).strip() or None,
+                        observacoes=str(row.get("observacoes", "")).strip() or None,
+                        status=str(row.get("status", "")).strip() or None,
+                    )
                     casas.append(casa)
                 except Exception as e:
-                    print(f"Erro ao processar linha {idx + 2}: {e}")
+                    print(f"Erro ao processar linha {idx + 1}: {str(e)}")
                     continue
 
             if not casas:
                 raise ValueError("Nenhuma casa de oração válida encontrada no arquivo")
 
-            self.save_casas(casas)
-            return casas
+            print(f"Total de casas importadas: {len(casas)}")
+
+            # Salvar casas no arquivo
+            if self.save_casas(casas):
+                print("Casas salvas com sucesso no arquivo")
+                return casas
+            else:
+                raise ValueError("Erro ao salvar casas no arquivo")
+
         except Exception as e:
-            print(f"Erro ao importar arquivo de casas: {e}")
-            messagebox.showerror(
-                "❌ Erro",
-                f"Erro ao importar arquivo de casas:\n{str(e)}\n\n"
-                "Certifique-se que o arquivo está no formato correto e tente novamente.",
+            print(f"Erro ao importar arquivo de casas: {str(e)}")
+            raise ValueError(f"Erro ao importar arquivo: {str(e)}")
+
+    def save_casa(
+        self,
+        dialog: tk.Toplevel,
+        entries: Dict[str, ttk.Entry],
+        old_casa: Optional[CasaOracao] = None,
+    ) -> bool:
+        """
+        Salva uma casa de oração.
+
+        Args:
+            dialog: Janela do formulário
+            entries: Dicionário com os campos do formulário
+            old_casa: Casa antiga (se for edição)
+        """
+        try:
+            # Validar campos obrigatórios
+            codigo = entries["codigo"].get().strip()
+            nome = entries["nome"].get().strip()
+
+            if not codigo or not nome:
+                messagebox.showerror(
+                    "❌ Erro", "Código e nome são campos obrigatórios!"
+                )
+                return False
+
+            # Se for edição, verificar se o código mudou
+            if old_casa and old_casa.codigo != codigo:
+                # Verificar se novo código já existe
+                casas = self.load_casas()
+                if any(casa.codigo == codigo for casa in casas):
+                    messagebox.showerror(
+                        "❌ Erro", "Já existe uma casa com este código!"
+                    )
+                    return False
+
+            # Criar objeto casa
+            casa = CasaOracao(
+                codigo=codigo,
+                nome=nome,
+                tipo_imovel=entries["tipo_imovel"].get().strip() or None,
+                endereco=entries["endereco"].get().strip() or None,
+                observacoes=entries["observacoes"].get().strip() or None,
+                status=entries["status"].get().strip() or None,
             )
-            return []
+
+            # Carregar casas existentes
+            casas = self.load_casas()
+
+            if old_casa:
+                # Atualizar casa existente
+                casas = [casa if c.codigo == old_casa.codigo else c for c in casas]
+            else:
+                # Verificar se código já existe
+                if any(c.codigo == casa.codigo for c in casas):
+                    messagebox.showerror(
+                        "❌ Erro", "Já existe uma casa com este código!"
+                    )
+                    return False
+                # Adicionar nova casa
+                casas.append(casa)
+
+            # Salvar todas as casas
+            if self.save_casas(casas):
+                messagebox.showinfo("✅ Sucesso", "Casa de oração salva com sucesso!")
+                dialog.destroy()
+                return True
+            return False
+
+        except Exception as e:
+            messagebox.showerror("❌ Erro", f"Erro ao salvar casa de oração:\n{str(e)}")
+            return False
+
+    def delete_casa(self, codigo: str) -> bool:
+        """
+        Exclui uma casa de oração.
+
+        Args:
+            codigo: Código da casa a ser excluída
+        """
+        try:
+            casas = self.load_casas()
+            casas = [casa for casa in casas if casa.codigo != codigo]
+            if self.save_casas(casas):
+                messagebox.showinfo(
+                    "✅ Sucesso", "Casa de oração excluída com sucesso!"
+                )
+                return True
+            return False
+        except Exception as e:
+            messagebox.showerror(
+                "❌ Erro", f"Erro ao excluir casa de oração:\n{str(e)}"
+            )
+            return False
