@@ -52,6 +52,7 @@ python -m src.gestao_vista
 ```
 church-app/
 ├── data/                  # Diretório para armazenamento de dados
+├── dist/                  # Diretório com executáveis gerados
 ├── src/                   # Código fonte
 │   └── gestao_vista/     # Pacote principal
 │       ├── core/         # Lógica principal da aplicação
@@ -62,6 +63,34 @@ church-app/
 ├── requirements.txt      # Dependências do projeto
 └── README.md            # Documentação
 ```
+
+## Gerando Executável
+
+Para gerar um executável da aplicação, siga os passos:
+
+1. Certifique-se de que todas as dependências estão instaladas:
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Execute o PyInstaller para gerar o executável:
+
+```bash
+# Para macOS
+pyinstaller --name church-app --onefile --windowed src/gestao_vista/main.py
+
+# Para Windows (execute em um ambiente Windows)
+pyinstaller --name church-app --onefile --windowed src/gestao_vista/main.py
+```
+
+O executável será gerado na pasta `dist/` com o nome `church-app`.
+
+**Observações:**
+
+- O executável gerado é específico para a plataforma onde foi compilado
+- Para gerar executáveis para diferentes sistemas operacionais, o comando deve ser executado no sistema operacional correspondente
+- O executável inclui todas as dependências necessárias e não requer instalação do Python
 
 ## Desenvolvimento
 

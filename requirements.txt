@@ -9,4 +9,5 @@ defusedxml==0.7.1  # Segurança adicional para XML
 python-dateutil==2.8.2  # Necessário para pandas
 pytz==2024.1  # Necessário para pandas
 six==1.16.0  # Dependência comum
-tkmacosx==1.0.5  # Melhorias para Tkinter no macOS 
+tkmacosx==1.0.5  # Melhorias para Tkinter no macOS
+pyinstaller==6.5.0  # Para gerar executáveis 
