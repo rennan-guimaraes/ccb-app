@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 
-from ..utils.design_system import DESIGN_SYSTEM
-from ..models.casa_oracao import CasaOracao
-from ..ui.components import create_button
-from ..utils.constants import is_documento_obrigatorio
-from ..services.observacao_service import ObservacaoService
+from gestao_vista.utils.design_system import DESIGN_SYSTEM
+from gestao_vista.models.casa_oracao import CasaOracao
+from gestao_vista.ui.components import create_button
+from gestao_vista.utils.constants import is_documento_obrigatorio
+from gestao_vista.services.observacao_service import ObservacaoService
 
 
 class TableService:

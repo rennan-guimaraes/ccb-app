@@ -6,8 +6,8 @@ from tkinter import messagebox, filedialog
 import os
 from datetime import datetime
 
-from ..utils.constants import is_documento_obrigatorio
-from ..utils.design_system import DESIGN_SYSTEM
+from gestao_vista.utils.constants import is_documento_obrigatorio
+from gestao_vista.utils.design_system import DESIGN_SYSTEM
 
 
 class ComparativeAnalysisService:

@@ -1,11 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 
-from .ui.components import create_sidebar, create_controls
-from .ui.styles import setup_styles, DESIGN_SYSTEM
-from .services.data_service import DataService
-from .services.excel_service import ExcelService
-from .ui.observacao_ui import ObservacaoUI
+from gestao_vista.ui.components import create_sidebar, create_controls
+from gestao_vista.ui.styles import setup_styles, DESIGN_SYSTEM
+from gestao_vista.services.data_service import DataService
+from gestao_vista.ui.observacao_ui import ObservacaoUI
 
 
 def main():
@@ -28,7 +27,6 @@ def main():
 
     # Criar serviços
     data_service = DataService()
-    excel_service = ExcelService(data_service)
 
     # Criar variáveis de controle
     caracteristica_var = tk.StringVar()
@@ -57,12 +55,12 @@ def main():
     # Criar sidebar
     sidebar, (export_container, export_button) = create_sidebar(
         root,
-        lambda: excel_service.load_gestao(combo),
-        lambda: excel_service.load_casas(),
-        lambda: excel_service.export_faltantes(caracteristica_var.get()),
+        lambda: data_service.import_gestao_from_excel(combo),
+        lambda: data_service.import_casas_from_excel(),
+        lambda: data_service.export_faltantes(caracteristica_var.get()),
         lambda: data_service.clear_gestao(),
         lambda: data_service.clear_casas(),
-        lambda: excel_service.view_casas(),
+        lambda: data_service.view_casas(),
         lambda: observacao_ui.show(),
     )
 

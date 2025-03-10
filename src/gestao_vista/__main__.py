@@ -1,5 +1,5 @@
 import tkinter as tk
-from .core.app import GestaoVistaApp
+from gestao_vista.core.app import GestaoVistaApp
 
 
 def main():

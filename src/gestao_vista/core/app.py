@@ -6,17 +6,17 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 from typing import Optional, List, Dict, Any, Callable
 
-from ..models.casa_oracao import CasaOracao
-from ..services.data_service import DataService
-from ..services.graph_service import GraphService
-from ..services.table_service import TableService
-from ..services.casa_oracao_service import CasaOracaoService
-from ..services.report_service import ReportService
-from ..ui.casa_oracao_ui import CasaOracaoUI
-from ..ui.observacao_ui import ObservacaoUI
-from ..utils.design_system import DESIGN_SYSTEM, setup_styles
-from ..utils.constants import is_documento_obrigatorio
-from ..ui.components import (
+from gestao_vista.models.casa_oracao import CasaOracao
+from gestao_vista.services.data_service import DataService
+from gestao_vista.services.graph_service import GraphService
+from gestao_vista.services.table_service import TableService
+from gestao_vista.services.casa_oracao_service import CasaOracaoService
+from gestao_vista.services.report_service import ReportService
+from gestao_vista.ui.casa_oracao_ui import CasaOracaoUI
+from gestao_vista.ui.observacao_ui import ObservacaoUI
+from gestao_vista.utils.design_system import DESIGN_SYSTEM, setup_styles
+from gestao_vista.utils.constants import is_documento_obrigatorio
+from gestao_vista.ui.components import (
     create_sidebar,
     create_main_content,
     create_controls,
@@ -24,7 +24,7 @@ from ..ui.components import (
     create_form_field,
     create_button,
 )
-from ..ui.comparative_analysis_ui import ComparativeAnalysisUI
+from gestao_vista.ui.comparative_analysis_ui import ComparativeAnalysisUI
 
 
 class GestaoVistaApp:

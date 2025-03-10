@@ -2,10 +2,12 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 
-from ..services.comparative_analysis_service import ComparativeAnalysisService
-from ..services.data_service import DataService
-from ..utils.design_system import DESIGN_SYSTEM
-from ..ui.components import create_button
+from gestao_vista.services.comparative_analysis_service import (
+    ComparativeAnalysisService,
+)
+from gestao_vista.services.data_service import DataService
+from gestao_vista.utils.design_system import DESIGN_SYSTEM
+from gestao_vista.ui.components import create_button
 
 
 class ComparativeAnalysisUI:

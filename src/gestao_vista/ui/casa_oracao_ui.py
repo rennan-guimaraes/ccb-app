@@ -2,9 +2,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from typing import Dict, List, Optional, Tuple
 
-from ..models.casa_oracao import CasaOracao
-from ..services.data_service import DataService
-from ..ui.components import (
+from gestao_vista.models.casa_oracao import CasaOracao
+from gestao_vista.services.data_service import DataService
+from gestao_vista.ui.components import (
     create_dialog_window,
     create_button,
     create_form_field,

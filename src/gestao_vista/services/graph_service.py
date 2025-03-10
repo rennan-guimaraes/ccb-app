@@ -5,9 +5,9 @@ from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 
-from ..utils.design_system import DESIGN_SYSTEM
-from ..utils.constants import is_documento_obrigatorio
-from ..ui.components import create_button
+from gestao_vista.utils.design_system import DESIGN_SYSTEM
+from gestao_vista.utils.constants import is_documento_obrigatorio
+from gestao_vista.ui.components import create_button
 
 
 class GraphService:

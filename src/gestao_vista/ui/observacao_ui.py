@@ -1,11 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from ..services.observacao_service import ObservacaoService
-from ..services.casa_oracao_service import CasaOracaoService
-from ..models.observacao import Observacao
-from .styles import *
-from ..services.data_service import DataService
-from .components import (
+from gestao_vista.services.observacao_service import ObservacaoService
+from gestao_vista.services.casa_oracao_service import CasaOracaoService
+from gestao_vista.models.observacao import Observacao
+from gestao_vista.ui.styles import *
+from gestao_vista.services.data_service import DataService
+from gestao_vista.ui.components import (
     create_label,
     create_button,
     create_combobox,

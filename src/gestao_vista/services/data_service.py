@@ -6,8 +6,8 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from ..models.casa_oracao import CasaOracao
-from ..utils.constants import normalizar_nome_documento
+from gestao_vista.models.casa_oracao import CasaOracao
+from gestao_vista.utils.constants import normalizar_nome_documento
 
 
 class DataService:

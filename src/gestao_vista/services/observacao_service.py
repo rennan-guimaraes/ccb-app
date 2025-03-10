@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from typing import List, Optional
-from ..models.observacao import Observacao
+from gestao_vista.models.observacao import Observacao
 
 
 class ObservacaoService:

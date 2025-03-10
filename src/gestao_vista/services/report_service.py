@@ -3,7 +3,7 @@ from tkinter import messagebox
 import pandas as pd
 from typing import List
 
-from ..models.casa_oracao import CasaOracao
+from gestao_vista.models.casa_oracao import CasaOracao
 
 
 class ReportService:

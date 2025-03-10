@@ -3,7 +3,7 @@ from tkinter import ttk
 from typing import Tuple, Callable, Optional, List
 from tkmacosx import Button as MacButton
 
-from ..utils.design_system import DESIGN_SYSTEM, get_button_style
+from gestao_vista.utils.design_system import DESIGN_SYSTEM, get_button_style
 
 
 def create_label(parent: tk.Widget, text: str, variant: str = "body1") -> tk.Label:

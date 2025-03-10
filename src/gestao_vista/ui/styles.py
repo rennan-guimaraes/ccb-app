@@ -1,7 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict, Any
-from ..utils.design_system import DESIGN_SYSTEM, setup_styles as setup_styles_base
+from gestao_vista.utils.design_system import (
+    DESIGN_SYSTEM,
+    setup_styles as setup_styles_base,
+)
 
 
 def setup_styles(root: tk.Tk):
