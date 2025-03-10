@@ -33,10 +33,11 @@ source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate  # Windows
 ```
 
-3. Instale as dependências:
+3. Instale o projeto em modo de desenvolvimento:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt  # Instala dependências
+pip install -e .                # Instala o projeto em modo de desenvolvimento
 ```
 
 ## Uso
@@ -60,6 +61,7 @@ church-app/
 │       ├── services/     # Serviços e gerenciadores
 │       ├── ui/           # Componentes da interface
 │       └── utils/        # Utilitários e configurações
+├── setup.py             # Configuração do pacote Python
 ├── requirements.txt      # Dependências do projeto
 └── README.md            # Documentação
 ```
@@ -68,20 +70,21 @@ church-app/
 
 Para gerar um executável da aplicação, siga os passos:
 
-1. Certifique-se de que todas as dependências estão instaladas:
+1. Certifique-se de que o projeto está instalado corretamente:
 
 ```bash
 pip install -r requirements.txt
+pip install -e .
 ```
 
 2. Execute o PyInstaller para gerar o executável:
 
 ```bash
 # Para macOS
-pyinstaller --name church-app --onefile --windowed src/gestao_vista/main.py
+pyinstaller --name church-app --onefile --windowed src/gestao_vista/__main__.py
 
 # Para Windows (execute em um ambiente Windows)
-pyinstaller --name church-app --onefile --windowed src/gestao_vista/main.py
+pyinstaller --name church-app --onefile --windowed src/gestao_vista/__main__.py
 ```
 
 O executável será gerado na pasta `dist/` com o nome `church-app`.
@@ -91,6 +94,7 @@ O executável será gerado na pasta `dist/` com o nome `church-app`.
 - O executável gerado é específico para a plataforma onde foi compilado
 - Para gerar executáveis para diferentes sistemas operacionais, o comando deve ser executado no sistema operacional correspondente
 - O executável inclui todas as dependências necessárias e não requer instalação do Python
+- Se encontrar problemas com importações, certifique-se de que o projeto está instalado com `pip install -e .`
 
 ## Desenvolvimento
 
