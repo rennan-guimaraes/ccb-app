@@ -1,5 +1,17 @@
 from tkinter import ttk
 from typing import Dict, Any
+import platform
+
+# Verificar o sistema operacional
+IS_WINDOWS = platform.system() == "Windows"
+
+# Fontes seguras para Windows e Mac
+if IS_WINDOWS:
+    DEFAULT_FONT = "Segoe UI"
+    HEADER_FONT = "Segoe UI"
+else:
+    DEFAULT_FONT = "Inter"
+    HEADER_FONT = "Inter"
 
 DESIGN_SYSTEM: Dict[str, Any] = {
     "colors": {
@@ -24,12 +36,12 @@ DESIGN_SYSTEM: Dict[str, Any] = {
     },
     "spacing": {"xs": 4, "sm": 8, "md": 16, "lg": 24, "xl": 32},
     "typography": {
-        "h1": ("Inter", 24, "bold"),
-        "h2": ("Inter", 20, "bold"),
-        "h3": ("Inter", 18, "bold"),
-        "body1": ("Inter", 14, "normal"),
-        "body2": ("Inter", 12, "normal"),
-        "button": ("Inter", 14, "bold"),
+        "h1": (HEADER_FONT, 24, "bold"),
+        "h2": (HEADER_FONT, 20, "bold"),
+        "h3": (HEADER_FONT, 18, "bold"),
+        "body1": (DEFAULT_FONT, 14, "normal"),
+        "body2": (DEFAULT_FONT, 12, "normal"),
+        "button": (DEFAULT_FONT, 14, "bold"),
     },
     "border_radius": {"sm": 4, "md": 8, "lg": 12},
 }
@@ -108,8 +120,8 @@ def setup_styles() -> None:
     style.configure(
         "Card.TFrame",
         background=DESIGN_SYSTEM["colors"]["background"]["paper"],
-        borderwidth=1,
-        relief="solid",
+        borderwidth=0,
+        relief="flat",
     )
 
     # Estilo para labels
@@ -239,6 +251,43 @@ def setup_styles() -> None:
         ],
     )
 
+    # Estilo para Scrollbar
+    style.configure(
+        "TScrollbar",
+        background=DESIGN_SYSTEM["colors"]["background"]["default"],
+        troughcolor=DESIGN_SYSTEM["colors"]["background"]["paper"],
+        borderwidth=0,
+        relief="flat",
+        arrowcolor=DESIGN_SYSTEM["colors"]["text"]["primary"],
+    )
+
+    # Estilo para Notebook (abas)
+    style.configure(
+        "TNotebook",
+        background=DESIGN_SYSTEM["colors"]["background"]["default"],
+        borderwidth=0,
+    )
+
+    style.configure(
+        "TNotebook.Tab",
+        background=DESIGN_SYSTEM["colors"]["background"]["paper"],
+        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        padding=[10, 5],
+        borderwidth=0,
+    )
+
+    style.map(
+        "TNotebook.Tab",
+        background=[
+            ("selected", DESIGN_SYSTEM["colors"]["primary"]),
+            ("active", DESIGN_SYSTEM["colors"]["background"]["hover"]),
+        ],
+        foreground=[
+            ("selected", DESIGN_SYSTEM["colors"]["text"]["primary"]),
+            ("active", DESIGN_SYSTEM["colors"]["text"]["primary"]),
+        ],
+    )
+
 
 def get_button_style(variant: str = "primary") -> Dict[str, Any]:
     """
@@ -251,22 +300,32 @@ def get_button_style(variant: str = "primary") -> Dict[str, Any]:
         "primary": {
             "default": DESIGN_SYSTEM["colors"]["primary"],
             "hover": "#2563EB",  # Azul mais escuro
-            "text": "#FFFFFF",
+            "text": DESIGN_SYSTEM["colors"]["text"]["primary"],
         },
         "secondary": {
             "default": DESIGN_SYSTEM["colors"]["secondary"],
             "hover": "#4F46E5",  # Indigo mais escuro
-            "text": "#FFFFFF",
+            "text": DESIGN_SYSTEM["colors"]["text"]["primary"],
         },
         "error": {
             "default": DESIGN_SYSTEM["colors"]["error"],
             "hover": "#DC2626",  # Vermelho mais escuro
-            "text": "#FFFFFF",
+            "text": DESIGN_SYSTEM["colors"]["text"]["primary"],
         },
         "success": {
             "default": DESIGN_SYSTEM["colors"]["success"],
             "hover": "#059669",  # Verde mais escuro
-            "text": "#FFFFFF",
+            "text": DESIGN_SYSTEM["colors"]["text"]["primary"],
+        },
+        "warning": {
+            "default": DESIGN_SYSTEM["colors"]["warning"],
+            "hover": "#D97706",  # Âmbar mais escuro
+            "text": DESIGN_SYSTEM["colors"]["text"]["primary"],
+        },
+        "text": {
+            "default": "transparent",
+            "hover": DESIGN_SYSTEM["colors"]["background"]["hover"],
+            "text": DESIGN_SYSTEM["colors"]["primary"],
         },
     }
 

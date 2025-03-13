@@ -11,6 +11,7 @@ from gestao_vista.ui.components import (
     create_combobox,
     create_searchable_combobox,
 )
+import platform
 
 
 class ObservacaoUI:
@@ -214,13 +215,26 @@ class ObservacaoUI:
         text_frame = ttk.Frame(content_frame, style="Card.TFrame")
         text_frame.pack(fill=tk.BOTH, expand=True)
 
+        # Verificar se estamos no Windows
+        is_windows = platform.system() == "Windows"
+
+        # Configurar cores para o campo de texto
+        if is_windows:
+            text_fg = "#0F172A"  # Texto escuro para Windows
+            text_bg = "#F8FAFC"  # Fundo branco para Windows
+            insert_color = "#0F172A"  # Cursor escuro para Windows
+        else:
+            text_fg = DESIGN_SYSTEM["colors"]["text"]["primary"]
+            text_bg = DESIGN_SYSTEM["colors"]["background"]["paper"]
+            insert_color = DESIGN_SYSTEM["colors"]["text"]["primary"]
+
         self.comentario_text = tk.Text(
             text_frame,
             height=10,
             font=DESIGN_SYSTEM["typography"]["body1"],
-            fg=DESIGN_SYSTEM["colors"]["text"]["primary"],
-            bg=DESIGN_SYSTEM["colors"]["background"]["paper"],
-            insertbackground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+            fg=text_fg,
+            bg=text_bg,
+            insertbackground=insert_color,
             relief="flat",
             padx=10,
             pady=10,
@@ -409,40 +423,64 @@ class ObservacaoUI:
         """Abre diálogo para editar uma observação"""
         dialog = tk.Toplevel(self.window)
         dialog.title("Editar Observação")
-        dialog.geometry("500x400")
+        dialog.geometry("600x500")  # Aumentando ainda mais o tamanho do modal
         dialog.configure(bg=DESIGN_SYSTEM["colors"]["background"]["default"])
 
-        # Container principal
+        # Container principal com grid para garantir posicionamento correto
         container = ttk.Frame(dialog, style="Card.TFrame")
         container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
+        # Configurar grid para garantir que os botões fiquem sempre visíveis
+        container.grid_rowconfigure(0, weight=0)  # Título
+        container.grid_rowconfigure(1, weight=0)  # Documento
+        container.grid_rowconfigure(2, weight=0)  # Label comentário
+        container.grid_rowconfigure(3, weight=1)  # Campo de texto (expansível)
+        container.grid_rowconfigure(4, weight=0)  # Botões
+        container.grid_columnconfigure(0, weight=1)
+
         # Título
         title_label = create_label(container, "Editar Observação", "h2")
-        title_label.pack(pady=(0, 20))
+        title_label.grid(row=0, column=0, sticky="w", pady=(0, 20))
 
         # Documento (não editável)
         doc_label = create_label(container, f"Documento: {observacao.documento}", "h3")
-        doc_label.pack(anchor=tk.W, pady=(0, 10))
+        doc_label.grid(row=1, column=0, sticky="w", pady=(0, 10))
 
         # Campo de Comentário
         comentario_label = create_label(container, "Comentário:", "body1")
-        comentario_label.pack(anchor=tk.W, pady=(5, 0))
+        comentario_label.grid(row=2, column=0, sticky="w", pady=(5, 0))
+
+        # Verificar se estamos no Windows
+        is_windows = platform.system() == "Windows"
+
+        # Configurar cores para o campo de texto
+        if is_windows:
+            text_fg = "#0F172A"  # Texto escuro para Windows
+            text_bg = "#F8FAFC"  # Fundo branco para Windows
+            insert_color = "#0F172A"  # Cursor escuro para Windows
+        else:
+            text_fg = DESIGN_SYSTEM["colors"]["text"]["primary"]
+            text_bg = DESIGN_SYSTEM["colors"]["background"]["paper"]
+            insert_color = DESIGN_SYSTEM["colors"]["text"]["primary"]
 
         comentario_text = tk.Text(
             container,
             height=10,
             font=DESIGN_SYSTEM["typography"]["body1"],
-            fg=DESIGN_SYSTEM["colors"]["text"]["primary"],
-            bg=DESIGN_SYSTEM["colors"]["background"]["paper"],
+            fg=text_fg,
+            bg=text_bg,
+            insertbackground=insert_color,
             relief="flat",
             wrap=tk.WORD,
+            padx=10,
+            pady=10,
         )
         comentario_text.insert("1.0", observacao.comentario)
-        comentario_text.pack(fill=tk.BOTH, expand=True, pady=5)
+        comentario_text.grid(row=3, column=0, sticky="nsew", pady=5)
 
         # Frame para botões
         btn_frame = ttk.Frame(container, style="Card.TFrame")
-        btn_frame.pack(fill=tk.X, pady=(10, 0))
+        btn_frame.grid(row=4, column=0, sticky="ew", pady=(10, 0))
 
         # Botão Salvar
         save_btn = create_button(

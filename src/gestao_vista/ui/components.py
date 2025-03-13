@@ -1,9 +1,22 @@
 import tkinter as tk
 from tkinter import ttk
 from typing import Tuple, Callable, Optional, List
-from tkmacosx import Button as MacButton
+import sys
+import platform
 
 from gestao_vista.utils.design_system import DESIGN_SYSTEM, get_button_style
+
+# Verificar o sistema operacional
+IS_MAC = platform.system() == "Darwin"
+
+# Importar MacButton apenas se estiver no Mac
+if IS_MAC:
+    try:
+        from tkmacosx import Button as MacButton
+    except ImportError:
+        MacButton = None
+else:
+    MacButton = None
 
 
 def create_label(parent: tk.Widget, text: str, variant: str = "body1") -> tk.Label:
@@ -32,33 +45,66 @@ def create_label(parent: tk.Widget, text: str, variant: str = "body1") -> tk.Lab
 
 def create_button(
     parent: ttk.Frame, text: str, command: Callable, variant: str
-) -> MacButton:
-    """Cria um botão estilizado usando tkmacosx.Button"""
+) -> tk.Button:
+    """Cria um botão estilizado compatível com Windows e Mac"""
     style = get_button_style(variant)
     bg_color = style["default"]
     hover_color = style["hover"]
     fg_color = style["text"]
     font = DESIGN_SYSTEM["typography"]["button"]
 
-    btn = MacButton(
-        parent,
-        text=text,
-        command=command,
-        font=font,
-        fg=fg_color,
-        bg=bg_color,
-        activebackground=hover_color,
-        activeforeground=fg_color,
-        disabledforeground=DESIGN_SYSTEM["colors"]["text"]["disabled"],
-        borderless=1,
-        focuscolor="",
-        height=35,
-        padx=12,
-        overrelief="flat",
-        borderwidth=0,
-        highlightthickness=0,
-        overbackground=hover_color,
-    )
+    # Usar MacButton se estiver no Mac e disponível
+    if IS_MAC and MacButton:
+        btn = MacButton(
+            parent,
+            text=text,
+            command=command,
+            font=font,
+            fg=fg_color,
+            bg=bg_color,
+            activebackground=hover_color,
+            activeforeground=fg_color,
+            disabledforeground=DESIGN_SYSTEM["colors"]["text"]["disabled"],
+            borderless=1,
+            focuscolor="",
+            height=35,
+            padx=12,
+            overrelief="flat",
+            borderwidth=0,
+            highlightthickness=0,
+            overbackground=hover_color,
+        )
+    else:
+        # Usar tk.Button para Windows
+        btn = tk.Button(
+            parent,
+            text=text,
+            command=command,
+            font=font,
+            fg=fg_color,
+            bg=bg_color,
+            activebackground=hover_color,
+            activeforeground=fg_color,
+            disabledforeground=DESIGN_SYSTEM["colors"]["text"]["disabled"],
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=0,
+            padx=12,
+            height=2,  # Altura em linhas de texto
+        )
+
+        # Adicionar efeitos de hover para Windows
+        def on_enter(e):
+            if str(btn["state"]) != "disabled":
+                btn.configure(background=hover_color)
+
+        def on_leave(e):
+            if str(btn["state"]) != "disabled":
+                btn.configure(background=bg_color)
+
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
+
     btn.pack(fill=tk.X, padx=10, pady=5)
 
     def on_disable():
@@ -176,45 +222,84 @@ def create_combobox(
     values: List[str] = None,
 ) -> ttk.Combobox:
     """Cria um combobox estilizado"""
+    # Verificar se estamos no Windows
+    is_windows = platform.system() == "Windows"
+
+    # Estilo específico para Windows ou Mac
+    style_name = "Custom.TCombobox"
+
     combo = ttk.Combobox(
         parent,
         textvariable=textvariable,
         values=values,
         state="readonly",
         font=DESIGN_SYSTEM["typography"]["body1"],
-        style="Custom.TCombobox",
+        style=style_name,
     )
 
     # Configurar estilo da seta
     style = ttk.Style()
-    style.configure(
-        "Custom.TCombobox",
-        background=DESIGN_SYSTEM["colors"]["background"]["paper"],
-        fieldbackground=DESIGN_SYSTEM["colors"]["background"]["paper"],
-        foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
-        arrowcolor=DESIGN_SYSTEM["colors"]["primary"],
-        borderwidth=2,
-        relief="solid",
-        padding=5,
-    )
 
-    style.map(
-        "Custom.TCombobox",
-        fieldbackground=[
-            ("readonly", DESIGN_SYSTEM["colors"]["background"]["paper"]),
-            ("disabled", DESIGN_SYSTEM["colors"]["background"]["default"]),
-            ("active", DESIGN_SYSTEM["colors"]["primary"]),
-        ],
-        foreground=[
-            ("readonly", DESIGN_SYSTEM["colors"]["text"]["primary"]),
-            ("disabled", DESIGN_SYSTEM["colors"]["text"]["disabled"]),
-            ("active", DESIGN_SYSTEM["colors"]["text"]["primary"]),
-        ],
-        bordercolor=[
-            ("focus", DESIGN_SYSTEM["colors"]["primary"]),
-            ("active", DESIGN_SYSTEM["colors"]["primary"]),
-        ],
-    )
+    # Configurações específicas para Windows
+    if is_windows:
+        style.configure(
+            style_name,
+            background="#F8FAFC",
+            fieldbackground="#F8FAFC",
+            foreground="#0F172A",
+            arrowcolor=DESIGN_SYSTEM["colors"]["primary"],
+            borderwidth=1,
+            relief="solid",
+            padding=5,
+        )
+
+        style.map(
+            style_name,
+            fieldbackground=[
+                ("readonly", "#F8FAFC"),
+                ("disabled", "#E2E8F0"),
+                ("active", "#F8FAFC"),
+            ],
+            foreground=[
+                ("readonly", "#0F172A"),
+                ("disabled", "#64748B"),
+                ("active", "#0F172A"),
+            ],
+            bordercolor=[
+                ("focus", DESIGN_SYSTEM["colors"]["primary"]),
+                ("active", DESIGN_SYSTEM["colors"]["primary"]),
+            ],
+        )
+    else:
+        # Configurações para Mac e outros sistemas
+        style.configure(
+            style_name,
+            background=DESIGN_SYSTEM["colors"]["background"]["paper"],
+            fieldbackground=DESIGN_SYSTEM["colors"]["background"]["paper"],
+            foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+            arrowcolor=DESIGN_SYSTEM["colors"]["primary"],
+            padding=5,
+            borderwidth=1,
+            relief="solid",
+        )
+
+        style.map(
+            style_name,
+            fieldbackground=[
+                ("readonly", DESIGN_SYSTEM["colors"]["background"]["paper"]),
+                ("disabled", DESIGN_SYSTEM["colors"]["background"]["default"]),
+                ("active", DESIGN_SYSTEM["colors"]["primary"]),
+            ],
+            foreground=[
+                ("readonly", DESIGN_SYSTEM["colors"]["text"]["primary"]),
+                ("disabled", DESIGN_SYSTEM["colors"]["text"]["disabled"]),
+                ("active", DESIGN_SYSTEM["colors"]["text"]["primary"]),
+            ],
+            bordercolor=[
+                ("focus", DESIGN_SYSTEM["colors"]["primary"]),
+                ("active", DESIGN_SYSTEM["colors"]["primary"]),
+            ],
+        )
 
     return combo
 
@@ -371,9 +456,39 @@ def create_searchable_combobox(
         items: Dicionário com os itens para busca {texto_exibido: valor}
         placeholder: Texto placeholder para o campo de busca
     """
+    # Verificar se estamos no Windows
+    is_windows = platform.system() == "Windows"
+
     # Frame principal
     frame = ttk.Frame(parent, style="Card.TFrame")
     frame.pack(fill=tk.X)
+
+    # Configurar estilo específico para o campo de busca
+    style = ttk.Style()
+    if is_windows:
+        # Estilo para Windows
+        style.configure(
+            "Search.TEntry",
+            padding=8,
+            relief="solid",
+            borderwidth=1,
+            background="#F8FAFC",
+            foreground="#0F172A",
+            fieldbackground="#F8FAFC",
+            insertcolor="#0F172A",
+        )
+    else:
+        # Estilo para Mac e outros sistemas
+        style.configure(
+            "Search.TEntry",
+            padding=8,
+            relief="solid",
+            borderwidth=1,
+            background=DESIGN_SYSTEM["colors"]["background"]["paper"],
+            foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+            fieldbackground=DESIGN_SYSTEM["colors"]["background"]["paper"],
+            insertcolor=DESIGN_SYSTEM["colors"]["text"]["primary"],
+        )
 
     # Campo de busca
     entry = ttk.Entry(
@@ -385,18 +500,35 @@ def create_searchable_combobox(
     entry.insert(0, placeholder)
     entry.configure(foreground=DESIGN_SYSTEM["colors"]["text"]["secondary"])
 
+    # Configurar cores para a lista de resultados
+    if is_windows:
+        # Cores para Windows
+        list_fg = "#0F172A"  # Texto escuro
+        list_bg = "#F8FAFC"  # Fundo claro
+        list_select_bg = DESIGN_SYSTEM["colors"]["primary"]  # Azul
+        list_select_fg = "#FFFFFF"  # Branco
+    else:
+        # Cores para Mac e outros sistemas
+        list_fg = DESIGN_SYSTEM["colors"]["text"]["primary"]
+        list_bg = DESIGN_SYSTEM["colors"]["background"]["paper"]
+        list_select_bg = DESIGN_SYSTEM["colors"]["primary"]
+        list_select_fg = DESIGN_SYSTEM["colors"]["text"]["primary"]
+
     # Lista de resultados (inicialmente oculta)
     listbox = tk.Listbox(
         frame,
         height=5,
         font=DESIGN_SYSTEM["typography"]["body1"],
-        fg=DESIGN_SYSTEM["colors"]["text"]["primary"],
-        bg=DESIGN_SYSTEM["colors"]["background"]["paper"],
+        fg=list_fg,
+        bg=list_bg,
+        selectbackground=list_select_bg,
+        selectforeground=list_select_fg,
         selectmode=tk.SINGLE,
         activestyle="none",
-        relief="flat",
+        relief="solid",
+        borderwidth=1,
         highlightthickness=1,
-        highlightcolor=DESIGN_SYSTEM["colors"]["border"],
+        highlightcolor=DESIGN_SYSTEM["colors"]["primary"],
         highlightbackground=DESIGN_SYSTEM["colors"]["border"],
     )
 
@@ -424,7 +556,10 @@ def create_searchable_combobox(
         nonlocal is_placeholder
         if is_placeholder:
             entry.delete(0, tk.END)
-            entry.configure(foreground=DESIGN_SYSTEM["colors"]["text"]["primary"])
+            if is_windows:
+                entry.configure(foreground="#0F172A")  # Texto escuro para Windows
+            else:
+                entry.configure(foreground=DESIGN_SYSTEM["colors"]["text"]["primary"])
             is_placeholder = False
         show_results()
         update_results("")  # Mostrar todos os itens
@@ -462,6 +597,10 @@ def create_searchable_combobox(
             selected = listbox.get(listbox.curselection())
             entry.delete(0, tk.END)
             entry.insert(0, selected)
+            if is_windows:
+                entry.configure(foreground="#0F172A")  # Texto escuro para Windows
+            else:
+                entry.configure(foreground=DESIGN_SYSTEM["colors"]["text"]["primary"])
             textvariable.set(selected)
             hide_results()
 

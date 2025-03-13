@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pandas as pd
+import platform
 
 from gestao_vista.services.comparative_analysis_service import (
     ComparativeAnalysisService,
@@ -34,7 +35,7 @@ class ComparativeAnalysisUI:
         # Criar janela de diálogo
         dialog = tk.Toplevel()
         dialog.title("Análise Comparativa")
-        dialog.geometry("500x300")
+        dialog.geometry("550x350")  # Aumentando o tamanho da janela
         dialog.configure(bg=DESIGN_SYSTEM["colors"]["background"]["default"])
 
         # Tornar a janela modal
@@ -65,6 +66,21 @@ class ComparativeAnalysisUI:
         name_entry = ttk.Entry(name_frame)
         name_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         name_entry.insert(0, "Período Anterior")
+
+        # Verificar se estamos no Windows
+        is_windows = platform.system() == "Windows"
+
+        # Configurar cores para o campo de entrada
+        if is_windows:
+            name_entry.configure(
+                foreground="#0F172A",  # Texto escuro para Windows
+                background="#F8FAFC",  # Fundo claro para Windows
+            )
+        else:
+            name_entry.configure(
+                foreground=DESIGN_SYSTEM["colors"]["text"]["primary"],
+                background=DESIGN_SYSTEM["colors"]["background"]["paper"],
+            )
 
         # Frame para o arquivo
         file_frame = ttk.Frame(main_frame, style="Card.TFrame")

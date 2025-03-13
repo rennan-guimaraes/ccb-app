@@ -1,9 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from typing import Dict, List, Optional, Tuple
+import platform
 
 from gestao_vista.models.casa_oracao import CasaOracao
 from gestao_vista.services.data_service import DataService
+from gestao_vista.utils.design_system import DESIGN_SYSTEM
 from gestao_vista.ui.components import (
     create_dialog_window,
     create_button,
@@ -11,6 +13,7 @@ from gestao_vista.ui.components import (
     create_label,
     create_searchable_combobox,
 )
+from gestao_vista.ui.windows_fixes import fix_treeview_header_for_windows
 
 
 class CasaOracaoUI:
@@ -33,6 +36,17 @@ class CasaOracaoUI:
         self.window.title("Casas de Oração")
         self.window.geometry("1000x700")
         self.window.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        # Verificar se estamos no Windows
+        is_windows = platform.system() == "Windows"
+
+        # Configurar cores de fundo
+        if is_windows:
+            bg_color = "#F8FAFC"  # Fundo claro para Windows
+            self.window.configure(bg=bg_color)
+        else:
+            bg_color = DESIGN_SYSTEM["colors"]["background"]["default"]
+            self.window.configure(bg=bg_color)
 
         # Container principal
         container = ttk.Frame(self.window, style="Card.TFrame")
@@ -100,9 +114,9 @@ class CasaOracaoUI:
 
         # Frame para a tabela
         self.table_frame = ttk.Frame(container, style="Card.TFrame")
-        self.table_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.table_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Criar e preencher tabela
+        # Criar tabela
         self._create_table()
 
     def _carregar_casas(self):
@@ -162,6 +176,9 @@ class CasaOracaoUI:
             self.selected_casa = None
             return
 
+        # Verificar se estamos no Windows
+        is_windows = platform.system() == "Windows"
+
         # Criar Treeview
         columns = ["codigo", "nome", "tipo_imovel", "endereco", "status"]
         tree = ttk.Treeview(
@@ -175,11 +192,11 @@ class CasaOracaoUI:
         tree.heading("endereco", text="Endereço")
         tree.heading("status", text="Status")
 
-        tree.column("codigo", width=100)
-        tree.column("nome", width=200)
-        tree.column("tipo_imovel", width=150)
-        tree.column("endereco", width=300)
-        tree.column("status", width=100)
+        tree.column("codigo", width=100, minwidth=80)
+        tree.column("nome", width=200, minwidth=150)
+        tree.column("tipo_imovel", width=150, minwidth=100)
+        tree.column("endereco", width=300, minwidth=200)
+        tree.column("status", width=100, minwidth=80)
 
         # Adicionar scrollbars
         vsb = ttk.Scrollbar(self.table_frame, orient="vertical", command=tree.yview)
@@ -214,6 +231,11 @@ class CasaOracaoUI:
                 ),
             )
 
+        # Configurações específicas para Windows
+        if is_windows:
+            # Aplicar correções específicas para o cabeçalho da tabela no Windows
+            fix_treeview_header_for_windows(tree)
+
         # Adicionar menu de contexto
         def show_context_menu(event):
             item = tree.selection()
@@ -236,59 +258,106 @@ class CasaOracaoUI:
         )  # Seleção
 
     def add_edit_casa(self, casa: Optional[CasaOracao] = None):
-        """Abre formulário para adicionar ou editar casa de oração"""
+        """Abre janela para adicionar ou editar uma casa de oração"""
+        # Verificar se estamos no Windows
+        is_windows = platform.system() == "Windows"
+
+        # Criar janela de diálogo
         dialog = create_dialog_window(
-            self.window, "Editar Casa" if casa else "Nova Casa", width=600, height=500
+            self.window, "Adicionar Casa" if casa is None else "Editar Casa", 500, 600
         )
 
-        # Container principal com grid
+        # Configurar cores de fundo para Windows
+        if is_windows:
+            dialog.configure(bg="#F8FAFC")  # Fundo claro para Windows
+
+        # Container principal
         container = ttk.Frame(dialog, style="Card.TFrame")
-        container.pack(fill=tk.BOTH, expand=True)
+        container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
-        # Configurar grid do container
-        container.grid_rowconfigure(0, weight=1)  # Conteúdo expande
-        container.grid_rowconfigure(1, weight=0)  # Botões não expandem
-        container.grid_columnconfigure(0, weight=1)
+        # Título
+        title_text = (
+            "Adicionar Nova Casa" if casa is None else f"Editar Casa: {casa.nome}"
+        )
+        title = create_label(container, title_text, "h2")
+        title.pack(pady=(0, 20))
 
-        # Frame para o conteúdo do formulário
-        content_frame = ttk.Frame(container, style="Card.TFrame", padding=20)
-        content_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=(20, 0))
-
-        # Frame para os campos do formulário
-        form_frame = ttk.Frame(content_frame, style="Card.TFrame")
-        form_frame.pack(fill=tk.BOTH, expand=True)
+        # Frame para os campos
+        fields_frame = ttk.Frame(container, style="Card.TFrame")
+        fields_frame.pack(fill=tk.BOTH, expand=True)
 
         # Campos do formulário
-        fields = {
-            "codigo": ("Código", True),
-            "nome": ("Nome", True),
-            "tipo_imovel": ("Tipo do Imóvel", False),
-            "endereco": ("Endereço", False),
-            "observacoes": ("Observações", False),
-            "status": ("Status", False),
-        }
-
         entries = {}
-        for field, (label, required) in fields.items():
-            field_value = getattr(casa, field, "") if casa else ""
-            _, entry = create_form_field(
-                form_frame,
-                label,
-                str(field_value) if field_value is not None else "",
-                required,
-            )
-            entries[field] = entry
 
-        # Frame para botões (sempre visível na parte inferior)
-        button_frame = ttk.Frame(container, style="Card.TFrame", padding=10)
-        button_frame.grid(row=1, column=0, sticky="ew", padx=20, pady=20)
+        # Definir cores para os campos de entrada
+        entry_fg = (
+            "#0F172A" if is_windows else DESIGN_SYSTEM["colors"]["text"]["primary"]
+        )
+        entry_bg = (
+            "#F8FAFC" if is_windows else DESIGN_SYSTEM["colors"]["background"]["paper"]
+        )
 
-        # Botões
-        cancel_btn = create_button(button_frame, "❌ Cancelar", dialog.destroy, "error")
-        cancel_btn.pack(side=tk.RIGHT, padx=(5, 0))
+        # Código
+        codigo_frame, codigo_entry = create_form_field(
+            fields_frame, "Código", casa.codigo if casa else "", True
+        )
+        entries["codigo"] = codigo_entry
+        if is_windows:
+            codigo_entry.configure(fg=entry_fg, bg=entry_bg)
 
+        # Nome
+        nome_frame, nome_entry = create_form_field(
+            fields_frame, "Nome", casa.nome if casa else "", True
+        )
+        entries["nome"] = nome_entry
+        if is_windows:
+            nome_entry.configure(fg=entry_fg, bg=entry_bg)
+
+        # Tipo de Imóvel
+        tipo_frame, tipo_entry = create_form_field(
+            fields_frame, "Tipo de Imóvel", casa.tipo_imovel if casa else ""
+        )
+        entries["tipo_imovel"] = tipo_entry
+        if is_windows:
+            tipo_entry.configure(fg=entry_fg, bg=entry_bg)
+
+        # Endereço
+        endereco_frame, endereco_entry = create_form_field(
+            fields_frame, "Endereço", casa.endereco if casa else ""
+        )
+        entries["endereco"] = endereco_entry
+        if is_windows:
+            endereco_entry.configure(fg=entry_fg, bg=entry_bg)
+
+        # Status
+        status_frame, status_entry = create_form_field(
+            fields_frame, "Status", casa.status if casa else ""
+        )
+        entries["status"] = status_entry
+        if is_windows:
+            status_entry.configure(fg=entry_fg, bg=entry_bg)
+
+        # Observações
+        observacoes_frame, observacoes_entry = create_form_field(
+            fields_frame, "Observações", casa.observacoes if casa else ""
+        )
+        entries["observacoes"] = observacoes_entry
+        if is_windows:
+            observacoes_entry.configure(fg=entry_fg, bg=entry_bg)
+
+        # Frame para botões
+        buttons_frame = ttk.Frame(container, style="Card.TFrame")
+        buttons_frame.pack(fill=tk.X, pady=(20, 0))
+
+        # Botão Cancelar
+        cancel_btn = create_button(
+            buttons_frame, "❌ Cancelar", lambda: dialog.destroy(), "error"
+        )
+        cancel_btn.pack(side=tk.LEFT, padx=5)
+
+        # Botão Salvar
         save_btn = create_button(
-            button_frame,
+            buttons_frame,
             "💾 Salvar",
             lambda: self._handle_save(dialog, entries, casa),
             "success",
